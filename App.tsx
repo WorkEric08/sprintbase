@@ -1,0 +1,116 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { AppDataProvider, useAppData } from './contexts/AppDataContext';
+import CicloView from './components/CicloView';
+import ProgressView from './components/ProgressView';
+import SettingsPanel from './components/SettingsPanel';
+
+/**
+ * Para adicionar um módulo novo (Simulado, Redação...), basta incluir uma entrada aqui:
+ * a bottom nav (mobile) e a sidebar (desktop) são geradas a partir desta lista.
+ */
+const TABS = [
+  { id: 'ciclo', label: 'Ciclo', icon: 'fa-rotate', View: CicloView },
+  { id: 'progresso', label: 'Progresso', icon: 'fa-chart-line', View: ProgressView },
+  { id: 'config', label: 'Ajustes', icon: 'fa-gear', View: SettingsPanel },
+] as const;
+
+type TabId = typeof TABS[number]['id'];
+
+const Spinner: React.FC = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+    <div className="w-10 h-10 rounded-full border-[3px] border-indigo-500 border-t-transparent animate-spin" />
+  </div>
+);
+
+const Logo: React.FC = () => (
+  <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/30">
+    <i className="fas fa-rotate text-white text-sm" />
+  </div>
+);
+
+const Shell: React.FC = () => {
+  const { loading, userName } = useAppData();
+  const [activeTab, setActiveTab] = useState<TabId>('ciclo');
+  const mainRef = useRef<HTMLElement>(null);
+
+  // Cada aba abre no topo, não na rolagem da aba anterior.
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [activeTab]);
+
+  if (loading) return <Spinner />;
+
+  const ActiveView = TABS.find(t => t.id === activeTab)!.View;
+
+  return (
+    <div className="flex flex-col md:flex-row h-full w-full bg-gray-50 dark:bg-gray-950 overflow-hidden">
+      {/* Sidebar (tablet / desktop) */}
+      <aside className="hidden md:flex flex-col bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 w-16 lg:w-56 shrink-0">
+        <div className="h-16 flex items-center justify-center lg:justify-start lg:px-5 gap-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <Logo />
+          <span className="hidden lg:block font-black text-gray-800 dark:text-white text-sm uppercase tracking-[0.15em]">Sprint</span>
+        </div>
+
+        <nav className="flex-1 p-2 space-y-1 pt-4 overflow-y-auto">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center justify-center lg:justify-start gap-3 py-3 lg:px-4 rounded-xl transition-all ${
+                activeTab === tab.id
+                  ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
+                  : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
+              }`}
+            >
+              <i className={`fas ${tab.icon} text-base w-5 text-center`} />
+              <span className="hidden lg:block text-xs font-black uppercase tracking-widest">{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-3 border-t border-gray-100 dark:border-gray-800 shrink-0">
+          <div className="flex items-center justify-center lg:justify-start gap-2.5 py-1">
+            <div className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+              <i className="fas fa-user text-[10px] text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <span className="hidden lg:block text-xs font-bold text-gray-500 truncate max-w-[140px]">{userName || 'Estudante'}</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* Conteúdo */}
+      <main
+        ref={mainRef}
+        className="scroll-container p-4 md:p-6 lg:p-8 pt-[max(env(safe-area-inset-top),1rem)] md:pt-6 lg:pt-8 pb-24 md:pb-8"
+      >
+        <div key={activeTab} className="animate-fade-in">
+          <ActiveView />
+        </div>
+      </main>
+
+      {/* Bottom nav (mobile). Telas de sprint/formulários são fixas em z-50+, então cobrem esta barra (z-40). */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 pt-3 safe-bottom flex items-center">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 flex flex-col items-center gap-1 transition-all active:scale-90 ${
+              activeTab === tab.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'
+            }`}
+          >
+            <i className={`fas ${tab.icon} text-xl`} />
+            <span className="text-[9px] font-semibold">{tab.label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+};
+
+const App: React.FC = () => (
+  <AppDataProvider>
+    <Shell />
+  </AppDataProvider>
+);
+
+export default App;

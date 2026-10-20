@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --app-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --app-height: 100dvh;
+  }
+}
+
+html, body {
+  height: var(--app-height);
+  margin: 0;
+  padding: 0;
+  background-color: #f9fafb;
+  color: #111827;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow: hidden; /* o App gerencia o scroll internamente */
+}
+
+.dark html, .dark body {
+  background-color: #030712;
+  color: #f9fafb;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Comportamento de app nativo: sem seleção de texto */
+*, *::before, *::after {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Área principal rolável. Sem -webkit-overflow-scrolling: no iOS ele prende
+   descendentes `position: fixed` ao container em vez do viewport. */
+.scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: clip;
+  scrollbar-gutter: stable;
+}
+
+/* Scrollbars discretas (desktop); ocultas em telas touch. */
+.scroll-container,
+.modal-scroll,
+.chips-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af transparent;
+}
+.dark .scroll-container,
+.dark .modal-scroll,
+.dark .chips-scroll {
+  scrollbar-color: #1e293b transparent;
+}
+@media (pointer: coarse) {
+  .scroll-container,
+  .modal-scroll,
+  .chips-scroll {
+    scrollbar-width: none;
+  }
+  .scroll-container::-webkit-scrollbar,
+  .modal-scroll::-webkit-scrollbar,
+  .chips-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Faixa horizontal de chips (seletor de matérias do Montar Sprint) */
+.chips-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+/* Cabeçalho de telas full-screen: absorve a safe area do topo */
+.safe-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 1rem);
+}
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+}
+
+/* Inputs numéricos sem setas */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@media (pointer: fine) {
+  button, [role="button"] {
+    cursor: pointer;
+  }
+}
