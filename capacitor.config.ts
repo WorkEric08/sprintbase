@@ -18,10 +18,10 @@ const config: CapacitorConfig = {
       initialViewportFitValueHint: 'cover',
     },
     SplashScreen: {
-      // A splash só some quando o app termina de carregar os dados (ver utils/native.ts).
+      // A abertura é só um fundo liso da cor do app (sem logo): ver res/values/styles.xml. Ela some assim que a
+      // tela inicial carrega os dados (utils/native.ts); a cor vem do tema Android (claro/escuro), não daqui.
       launchAutoHide: false,
-      launchFadeOutDuration: 200,
-      backgroundColor: '#f9fafb',
+      launchFadeOutDuration: 150,
       showSpinner: false,
     },
   },

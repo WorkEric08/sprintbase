@@ -19,6 +19,9 @@
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <!-- Abertura sem logo: só o fundo liso da cor do app, que some quando o Ciclo aparece. -->
+        <item name="windowSplashScreenBackground">@color/sprint_window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/sprint_splash_icon</item>
+        <item name="android:background">@color/sprint_window_background</item>
     </style>
 </resources>

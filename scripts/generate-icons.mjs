@@ -1,10 +1,10 @@
-// Gera os ícones e splashes a partir do desenho de public/icon.svg (gradiente roxo + raio).
+// Gera os ícones a partir do desenho de public/icon.svg (gradiente roxo + raio).
 //
 //   node scripts/generate-icons.mjs
 //
 // Saídas:
 //   public/icons/*.png         ícones do PWA (192, 512, maskable, apple-touch)
-//   assets/*.png               fontes do @capacitor/assets (ícone adaptativo e splashes)
+//   assets/*.png               fontes do @capacitor/assets (ícone adaptativo do Android)
 // Depois, para gerar os recursos do Android:  npx capacitor-assets generate --android
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -50,18 +50,7 @@ await png(rounded(1024), 'assets/icon-only.png', 1024);
 await png(svg(1024, bolt(1024, 1.4)), 'assets/icon-foreground.png', 1024);
 await png(svg(1024, `${GRADIENT}<rect width="1024" height="1024" fill="url(#g)"/>`), 'assets/icon-background.png', 1024);
 
-// ── Splash (clara e escura): ícone centralizado sobre a cor de fundo do tema ──
-const splash = (bg) => {
-  const size = 2732;
-  const icon = 560;
-  const pos = (size - icon) / 2;
-  return svg(size, `${GRADIENT}<rect width="${size}" height="${size}" fill="${bg}"/>
-    <g transform="translate(${pos} ${pos})">
-      <rect width="${icon}" height="${icon}" rx="${icon * 0.234}" fill="url(#g)"/>
-      ${bolt(icon, icon / 512)}
-    </g>`);
-};
-await png(splash('#f9fafb'), 'assets/splash.png', 2732);
-await png(splash('#030712'), 'assets/splash-dark.png', 2732);
+// Não há imagem de abertura (splash) de propósito: o app abre direto na tela inicial, e a abertura do Android é só
+// um fundo liso da cor do app (res/values/styles.xml, sprint_colors.xml). Por isso não existem assets/splash*.png.
 
-console.log('Ícones e splashes gerados em public/icons e assets.');
+console.log('Ícones gerados em public/icons e assets.');
