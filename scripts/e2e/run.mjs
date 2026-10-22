@@ -394,20 +394,49 @@ async function main() {
   await check('seletor de cores personalizado responde ao toque (react-colorful)', async () => {
     await click('Nova matéria', { exact: true });
     await waitFor(async () => (await bodyText()).includes('duração do bloco'), 'abrir formulário');
-    await click('Escolher outra cor');
-    const box = await waitFor(() => page.evaluate(() => {
-      const el = document.querySelector('.react-colorful__saturation');
-      if (!el) return null;
-      el.scrollIntoView({ block: 'center' });
-      const r = el.getBoundingClientRect();
-      return { x: r.left, y: r.top, w: r.width, h: r.height };
-    }), 'área de saturação do seletor');
-    const hexOf = () => page.evaluate(() => [...document.querySelectorAll('span')].map(s => s.textContent.trim()).find(t => /^#[0-9A-Fa-f]{6}$/.test(t)) ?? '');
-    const before = await hexOf();
-    assert(/^#[0-9A-Fa-f]{6}$/.test(before), `cor inicial não lida (${before})`);
-    await page.mouse.click(box.x + box.w * 0.2, box.y + box.h * 0.75); // canto escuro e pouco saturado: bem diferente do índigo inicial
-    await waitFor(async () => (await hexOf()) !== before, 'a cor mudar depois do toque no seletor');
-    await target.pressBack();
+    try {
+      await click('Escolher outra cor');
+      // O formulário rola sozinho até o seletor (animação suave): espera a posição parar antes de medir e tocar.
+      const rectOf = () => page.evaluate(() => {
+        const el = document.querySelector('.react-colorful__saturation');
+        const picker = document.querySelector('.react-colorful');
+        if (!el || !picker) return null;
+        const r = el.getBoundingClientRect();
+        const p = picker.getBoundingClientRect();
+        const section = picker.parentElement?.parentElement?.getBoundingClientRect(); // a seção "Cor" (a largura útil do formulário)
+        return { x: r.left, y: r.top, w: r.width, h: r.height, pickerW: p.width, pickerH: p.height, pickerX: p.left, sectionX: section?.left ?? 0, sectionW: section?.width ?? 0 };
+      });
+      let box = await waitFor(rectOf, 'área de saturação do seletor');
+      for (let i = 0; i < 20; i++) {
+        await sleep(120);
+        const next = await rectOf();
+        if (next && Math.abs(next.y - box.y) < 0.5) { box = next; break; }
+        box = next ?? box;
+      }
+      // Retângulo de lado a lado: ocupa a largura toda da seção (não os 200 px fixos encostados à esquerda) e é mais largo que alto.
+      assert(Math.abs(box.pickerW - box.sectionW) <= 1, `seletor com ${box.pickerW.toFixed(0)} px, a seção tem ${box.sectionW.toFixed(0)} px: não ocupa a largura toda`);
+      assert(Math.abs(box.pickerX - box.sectionX) <= 1, 'seletor não começa na borda esquerda da seção');
+      assert(box.pickerW > box.pickerH * 1.2, `seletor ${box.pickerW.toFixed(0)}×${box.pickerH.toFixed(0)} px: deveria ser um retângulo mais largo que alto`);
+      const hexOf = () => page.evaluate(() => [...document.querySelectorAll('input')].map(i => i.value.trim()).find(v => /^#[0-9A-Fa-f]{6}$/.test(v)) ?? '');
+      const swatchColor = () => page.evaluate(() => getComputedStyle(document.querySelector('div.w-12.h-12')).backgroundColor);
+      const before = await hexOf();
+      assert(/^#[0-9A-Fa-f]{6}$/.test(before), `cor inicial não lida (${before})`);
+      await page.mouse.click(box.x + box.w * 0.2, box.y + box.h * 0.75); // canto escuro e pouco saturado: bem diferente do índigo inicial
+      await waitFor(async () => (await hexOf()) !== before, 'a cor mudar depois do toque no seletor');
+      // Código da cor digitado: o campo aceita um hexadecimal e a amostra acompanha.
+      const field = await page.$('input[aria-label="Código hexadecimal da cor"]');
+      assert(field, 'campo do código da cor ausente');
+      await field.click();
+      await sleep(150); // o app seleciona o texto todo ao focar: o que se digita substitui o código
+      await page.keyboard.type('#10b981', { delay: 20 });
+      await waitFor(async () => (await swatchColor()) === 'rgb(16, 185, 129)', 'a amostra virar a cor digitada (#10b981)');
+    } finally {
+      // Fecha o formulário mesmo se algo falhou: um formulário esquecido aberto derrubaria os testes seguintes em cascata.
+      if (await hasText('duração do bloco')) {
+        await target.pressBack().catch(() => {});
+        await waitGone('duração do bloco').catch(() => {});
+      }
+    }
     await waitGone('duração do bloco');
   });
   await check('botão voltar do aparelho fecha o formulário sem sair do app', async () => {

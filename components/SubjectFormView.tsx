@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { HexColorPicker } from 'react-colorful';
+import { HexColorInput, HexColorPicker } from 'react-colorful';
 import { Subject, SubjectInput } from '../types';
 import { useBackButton } from '../hooks/useBackButton';
 import Icon from './Icon';
@@ -26,6 +26,12 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
   const [duration, setDuration] = useState(subject?.duration ?? 25);
   const [blockCount, setBlockCount] = useState(subject?.blockCount ?? 20);
   const [customColor, setCustomColor] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // Ao abrir o seletor livre, rola o formulário até ele aparecer inteiro (ele fica abaixo da paleta).
+  useEffect(() => {
+    if (customColor) pickerRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [customColor]);
 
   const canSave = title.trim().length > 0;
   const handleSave = () => {
@@ -124,9 +130,30 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
               </button>
             </div>
             {customColor && (
-              <div className="flex items-center gap-4">
-                <HexColorPicker color={color} onChange={setColor} />
-                <span className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase">{color}</span>
+              <div ref={pickerRef} className="space-y-3 scroll-mb-6">
+                {/* Retângulo de lado a lado (tamanho em index.css): cor e tom em cima, matiz embaixo. */}
+                <HexColorPicker color={color} onChange={setColor} className="sprint-color-picker" />
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-2xl shrink-0 border border-black/10 dark:border-white/10"
+                    style={{ backgroundColor: color }}
+                    aria-hidden="true"
+                  />
+                  <HexColorInput
+                    color={color}
+                    onChange={setColor}
+                    prefixed
+                    aria-label="Código hexadecimal da cor"
+                    // Com 6 dígitos o campo recusa mais caracteres: selecionar tudo ao tocar faz o que se digita SUBSTITUIR o código.
+                    // O adiamento evita que o próprio toque desfaça a seleção. Sem corretor: ele estragaria um código como "b981".
+                    onFocus={e => { const field = e.currentTarget; setTimeout(() => field.select(), 0); }}
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    className="flex-1 min-w-0 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-widest text-gray-800 dark:text-gray-100 focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700"
+                  />
+                </div>
               </div>
             )}
           </div>

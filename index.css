@@ -22,6 +22,27 @@
   }
 }
 
+/* Seletor de cor livre (react-colorful). O padrão da biblioteca é um quadrado fixo de 200×200 px encostado à
+   esquerda; aqui ele ocupa a largura toda (retângulo de lado a lado). Dois seletores de classe vencem os estilos
+   que a biblioteca injeta depois, sem precisar de !important. */
+.sprint-color-picker.react-colorful {
+  width: 100%;
+  height: 260px;
+}
+.sprint-color-picker .react-colorful__saturation {
+  border-radius: 16px 16px 0 0;
+}
+.sprint-color-picker .react-colorful__hue {
+  height: 32px; /* mais grossa: fácil de acertar com o dedo */
+}
+.sprint-color-picker .react-colorful__last-control {
+  border-radius: 0 0 16px 16px;
+}
+.sprint-color-picker .react-colorful__pointer {
+  width: 32px;
+  height: 32px;
+}
+
 :root {
   --app-height: 100vh;
 }

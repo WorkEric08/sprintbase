@@ -32,7 +32,7 @@ O método gira em torno de três ideias:
 ## Funcionalidades
 
 ### Ciclo de matérias
-- Criar, editar e excluir matérias, cada uma com **nome**, **cor**, **duração do bloco** (de 5 a 120 minutos) e **meta de blocos** (de 1 a 100).
+- Criar, editar e excluir matérias, cada uma com **nome**, **cor**, **duração do bloco** (de 5 a 120 minutos) e **meta de blocos** (de 1 a 100). A cor vem de uma paleta rápida ou de um seletor livre, em que você escolhe qualquer cor e tom arrastando ou digitando o código (por exemplo `#10B981`).
 - Cada matéria exibe uma barra de progresso e um quadradinho por bloco da meta, preenchidos conforme você avança.
 - Possibilidade de zerar os blocos de uma matéria (com confirmação).
 
