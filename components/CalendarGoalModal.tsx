@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useBackButton } from '../hooks/useBackButton';
 import { GoalLevel, GoalSettings, MAX_GOAL_LIMIT, MIN_GOAL_LIMIT, levelColor } from '../utils/calendar';
 import Icon from './Icon';
+import RangeSlider from './RangeSlider';
 
 interface Props {
   current: GoalSettings;
@@ -56,16 +57,14 @@ const CalendarGoalModal: React.FC<Props> = ({ current, onSave, onClose }) => {
                 <label htmlFor="goal-min" className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Mínimo diário</label>
                 <span className="text-sm font-black text-violet-600 dark:text-violet-400">{min} {plural(min)}</span>
               </div>
-              <input id="goal-min" type="range" min={1} max={MIN_GOAL_LIMIT} step={1} value={min}
-                onChange={e => changeMin(Number(e.target.value))} className="w-full" style={{ accentColor: '#7c3aed' }} />
+              <RangeSlider id="goal-min" min={1} max={MIN_GOAL_LIMIT} value={min} onChange={changeMin} color="#7c3aed" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label htmlFor="goal-max" className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Máximo diário</label>
                 <span className="text-sm font-black text-violet-800 dark:text-violet-300">{max} {plural(max)}</span>
               </div>
-              <input id="goal-max" type="range" min={1} max={MAX_GOAL_LIMIT} step={1} value={max}
-                onChange={e => changeMax(Number(e.target.value))} className="w-full" style={{ accentColor: '#4c1d95' }} />
+              <RangeSlider id="goal-max" min={1} max={MAX_GOAL_LIMIT} value={max} onChange={changeMax} color="#5b21b6" />
             </div>
           </div>
 

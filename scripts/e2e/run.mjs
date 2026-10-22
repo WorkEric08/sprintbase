@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import sharp from 'sharp';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = join(root, 'scripts', 'e2e', '.artifacts');
@@ -179,6 +180,13 @@ const localKey = () => page.evaluate(() => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 });
+
+/** Move um <input type="range"> achado pelo aria-label (setter nativo + evento input). */
+const setRange_ = (ariaLabel, value) => page.evaluate(({ ariaLabel, value }) => {
+  const el = document.querySelector(`input[aria-label="${ariaLabel}"]`);
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, String(value));
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}, { ariaLabel, value });
 
 /** Move um <input type="range"> como o React espera (setter nativo + evento input). */
 const setRange = (id, value) => page.evaluate(({ id, value }) => {
@@ -438,6 +446,99 @@ async function main() {
       }
     }
     await waitGone('duração do bloco');
+  });
+  await check('controles deslizantes: trilha uniforme da cor do app e preenchimento que acompanha o botão', async () => {
+    await click('Nova matéria', { exact: true });
+    await waitFor(async () => (await bodyText()).includes('duração do bloco'), 'abrir formulário');
+    try {
+      const info = () => page.evaluate(() => {
+        const input = document.querySelector('input[aria-label="Duração do bloco, em minutos"]');
+        input.scrollIntoView({ block: 'center' });
+        const r = input.getBoundingClientRect();
+        return { p: getComputedStyle(input).getPropertyValue('--p').trim(), height: r.height, x: r.left, y: r.top, w: r.width };
+      });
+      // Cor (R,G,B) do pixel que o usuário vê, a `dx` px da borda esquerda do controle, na altura da trilha.
+      const pixelAt = async dx => {
+        const r = await info();
+        const png = await page.screenshot({ clip: { x: r.x, y: r.y, width: r.w, height: r.height }, type: 'png' });
+        const { data, info: img } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+        const scale = img.width / r.w;
+        const px = Math.round(dx * scale), py = Math.round((r.height / 2) * scale);
+        const i = (py * img.width + px) * 3;
+        return [data[i], data[i + 1], data[i + 2]];
+      };
+      // O formulário abre com uma animação (nasce transparente e sobe): medir no meio dela daria cores e posições falsas.
+      await waitFor(() => page.evaluate(() => document.getAnimations().every(a => a.playState !== 'running')), 'as animações de abertura terminarem');
+      const near = ([r, g, b], [r2, g2, b2], tol) => Math.abs(r - r2) <= tol && Math.abs(g - g2) <= tol && Math.abs(b - b2) <= tol;
+      const INDIGO = [79, 70, 229];
+      const atStart = await info();
+      assert(atStart.height >= 24, `área de toque de só ${atStart.height}px`);
+
+      // Ponto médio: as DUAS PONTAS têm que ser da família índigo, sem o branco padrão do navegador nas extremidades.
+      await setRange_('Duração do bloco, em minutos', 60);
+      const w = (await info()).w;
+      const left = await pixelAt(6); // a 3 px o pixel ainda está na curva arredondada e mistura com o fundo
+      const right = await pixelAt(w - 6);
+      const beforeThumb = await pixelAt(w * 0.3);
+      const afterThumb = await pixelAt(w * 0.8);
+      assert(near(left, INDIGO, 40), `ponta esquerda (preenchida) não é o índigo do app: rgb(${left})`);
+      assert(near(beforeThumb, INDIGO, 40), `trecho preenchido não é o índigo do app: rgb(${beforeThumb})`);
+      for (const [nome, c] of [['ponta direita', right], ['trecho restante', afterThumb]]) {
+        assert(!near(c, [255, 255, 255], 12), `${nome} está branca (visual padrão do navegador): rgb(${c})`);
+        assert(c[2] - c[0] >= 15, `${nome} não é da família índigo/azul do app: rgb(${c})`);
+      }
+      assert(!near(right, left, 20), 'a parte restante deveria ser um tom mais suave que a preenchida');
+      await setRange_('Duração do bloco, em minutos', 120);
+      assert(Number((await info()).p) === 1, 'no máximo, o preenchimento deveria ir até o fim (--p = 1)');
+      await setRange_('Duração do bloco, em minutos', 5);
+      assert(Number((await info()).p) === 0, 'no mínimo, o preenchimento deveria ficar vazio (--p = 0)');
+      await setRange_('Duração do bloco, em minutos', 60);
+      const mid = Number((await info()).p);
+      assert(Math.abs(mid - (60 - 5) / (120 - 5)) < 0.01, `no meio, --p deveria ser ~0,48 e é ${mid}`);
+    } finally {
+      if (await hasText('duração do bloco')) {
+        await target.pressBack().catch(() => {});
+        await waitGone('duração do bloco').catch(() => {});
+      }
+    }
+  });
+  await check('barra do botão tem o fundo do app, some com o teclado aberto e a tecla de ação recolhe o teclado', async () => {
+    await click('Nova matéria', { exact: true });
+    await waitFor(async () => (await bodyText()).includes('duração do bloco'), 'abrir formulário');
+    try {
+      const colors = () => page.evaluate(() => ({
+        footer: getComputedStyle(document.querySelector('[data-testid="form-footer"]')).backgroundColor,
+        page: getComputedStyle(document.body).backgroundColor,
+      }));
+      const c = await colors();
+      assert(c.footer === c.page, `barra do botão (${c.footer}) diferente do fundo do app (${c.page}): fica uma emenda visível`);
+
+      // Teclado: no APK vem do plugin; na web, a área visível da página encolhe. Simula esse encolhimento.
+      const keyboard = open => page.evaluate(open => {
+        const vv = window.visualViewport;
+        if (open) Object.defineProperty(vv, 'height', { value: Math.round(window.innerHeight * 0.5), configurable: true });
+        else delete vv.height; // volta ao getter original do protótipo
+        vv.dispatchEvent(new Event('resize'));
+      }, open);
+      await keyboard(true);
+      await waitFor(async () => !(await page.$('[data-testid="form-footer"]')), 'a barra do botão sumir com o teclado aberto');
+      assert(!(await hasText('Adicionar matéria')) || !(await page.$('[data-testid="form-footer"]')), 'botão ainda visível com o teclado aberto');
+      await keyboard(false);
+      await waitFor(async () => !!(await page.$('[data-testid="form-footer"]')), 'a barra do botão voltar ao recolher o teclado');
+
+      // A tecla "Concluído/Ir" do teclado tira o foco do campo (recolhe o teclado).
+      await typeInto('Ex.: Matemática', 'Química');
+      assert(await page.evaluate(() => document.activeElement?.tagName === 'INPUT'), 'o campo do nome deveria estar em foco');
+      await page.keyboard.press('Enter');
+      await waitFor(() => page.evaluate(() => document.activeElement?.tagName !== 'INPUT'), 'o campo perder o foco ao apertar Enter');
+      assert(await page.evaluate(() => document.querySelector('input[type="text"]').getAttribute('enterkeyhint') === 'done'), 'a tecla de ação deveria ser "Concluído"');
+    } finally {
+      await page.evaluate(() => { try { delete window.visualViewport.height; } catch { /* ignorado */ } });
+      if (await hasText('duração do bloco')) {
+        await target.pressBack().catch(() => {});
+        await waitGone('duração do bloco').catch(() => {});
+      }
+    }
   });
   await check('botão voltar do aparelho fecha o formulário sem sair do app', async () => {
     await click('Nova matéria', { exact: true });

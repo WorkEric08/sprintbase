@@ -154,7 +154,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
       </div>
 
       {/* Controles */}
-      <div className="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shrink-0">
+      <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 shrink-0">
         <div className="chips-scroll flex gap-2 px-4 pt-3 pb-2">
           {subjects.map(subject => {
             const remaining = subject.blockCount - subject.completedBlocks.length;

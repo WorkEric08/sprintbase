@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { HexColorInput, HexColorPicker } from 'react-colorful';
 import { Subject, SubjectInput } from '../types';
 import { useBackButton } from '../hooks/useBackButton';
+import { useKeyboardVisible } from '../hooks/useKeyboardVisible';
 import Icon from './Icon';
+import RangeSlider from './RangeSlider';
 
 interface Props {
   /** Se informado, o formulário edita essa matéria; senão cria uma nova. */
@@ -27,6 +29,7 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
   const [blockCount, setBlockCount] = useState(subject?.blockCount ?? 20);
   const [customColor, setCustomColor] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const keyboardOpen = useKeyboardVisible();
 
   // Ao abrir o seletor livre, rola o formulário até ele aparecer inteiro (ele fica abaixo da paleta).
   useEffect(() => {
@@ -65,6 +68,9 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
               placeholder="Ex.: Matemática"
               maxLength={40}
               autoFocus={!subject}
+              // A tecla de ação do teclado vira "Concluído" e recolhe o teclado (antes ela não fazia nada).
+              enterKeyHint="done"
+              onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
               className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700"
             />
           </div>
@@ -74,12 +80,7 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
               <label className={LABEL}>Duração do bloco</label>
               <span className="text-sm font-black text-gray-800 dark:text-gray-100">{duration} min</span>
             </div>
-            <input
-              type="range" min={5} max={120} step={5}
-              value={duration}
-              onChange={e => setDuration(Number(e.target.value))}
-              className="w-full accent-indigo-600"
-            />
+            <RangeSlider value={duration} min={5} max={120} step={5} onChange={setDuration} ariaLabel="Duração do bloco, em minutos" />
           </div>
 
           <div className="space-y-2">
@@ -87,12 +88,7 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
               <label className={LABEL}>Meta de blocos</label>
               <span className="text-sm font-black text-gray-800 dark:text-gray-100">{blockCount} blocos</span>
             </div>
-            <input
-              type="range" min={1} max={100} step={1}
-              value={blockCount}
-              onChange={e => setBlockCount(Number(e.target.value))}
-              className="w-full accent-indigo-600"
-            />
+            <RangeSlider value={blockCount} min={1} max={100} onChange={setBlockCount} ariaLabel="Meta de blocos" />
             <div className="flex flex-wrap gap-1 pt-1">
               {Array.from({ length: Math.min(blockCount, 40) }).map((_, i) => (
                 <div key={i} className="w-3.5 h-3.5 rounded-sm" style={{ backgroundColor: color, opacity: 0.85 }} />
@@ -160,17 +156,24 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
         </div>
       </div>
 
-      <div className="p-4 safe-bottom border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shrink-0">
-        <div className="max-w-lg mx-auto">
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.15em] bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none"
-          >
-            {subject ? 'Salvar alterações' : 'Adicionar matéria'}
-          </button>
+      {/* Com o teclado aberto a barra do botão sai de cena: ela ficava flutuando acima do teclado, com um vão embaixo,
+          e tomava um pedaço do pouco espaço que sobra para o formulário. Ao recolher o teclado ela volta. */}
+      {!keyboardOpen && (
+        <div
+          data-testid="form-footer"
+          className="p-4 safe-bottom border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 shrink-0"
+        >
+          <div className="max-w-lg mx-auto">
+            <button
+              onClick={handleSave}
+              disabled={!canSave}
+              className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.15em] bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none"
+            >
+              {subject ? 'Salvar alterações' : 'Adicionar matéria'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>,
     document.body
   );
