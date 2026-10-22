@@ -30,3 +30,6 @@ keystore.properties
 *.njsproj
 *.sln
 *.sw?
+
+# APK de release gerado por "npm run android:release"
+release/

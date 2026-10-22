@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { SprintItem, Subject } from '../types';
 import { useAppData } from '../contexts/AppDataContext';
+import { useStreak } from '../hooks/useStreak';
+import StreakWidget from './StreakWidget';
 import SubjectCard from './SubjectCard';
 import SubjectFormView from './SubjectFormView';
 import SprintBuilderView from './SprintBuilderView';
@@ -18,6 +20,7 @@ function getGreeting(): string {
 /** Aba principal: matérias, progresso por matéria e entrada para o Montar Sprint. */
 const CicloView: React.FC = () => {
   const { subjects, userName, addSubject, updateSubject, deleteSubject, resetSubjectBlocks } = useAppData();
+  const { streak, enabled: streakEnabled } = useStreak();
 
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Subject | null>(null);
@@ -35,13 +38,16 @@ const CicloView: React.FC = () => {
             {userName || 'Estudante'}
           </h2>
         </div>
-        <button
-          onClick={() => setAdding(true)}
-          aria-label="Nova matéria"
-          className="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-colors active:scale-90 shrink-0"
-        >
-          <i className="fas fa-plus" />
-        </button>
+        <div className="flex items-center gap-2 shrink-0 ml-3">
+          {streakEnabled && <StreakWidget state={streak} compact />}
+          <button
+            onClick={() => setAdding(true)}
+            aria-label="Nova matéria"
+            className="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-colors active:scale-90 shrink-0"
+          >
+            <i className="fas fa-plus" />
+          </button>
+        </div>
       </div>
 
       {subjects.length === 0 ? (

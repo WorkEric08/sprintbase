@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+// Versão do app = a do package.json (única fonte). 0.3.0 → versionName "0.3.0", versionCode 300
+// (maior.menor.patch → maior*10000 + menor*100 + patch; só pode crescer a cada release).
+def sprintPkg = new groovy.json.JsonSlurper().parse(file('../../package.json'))
+def sprintVersionParts = sprintPkg.version.split('-')[0].tokenize('.').collect { it.toInteger() }
+def sprintVersionCode = sprintVersionParts[0] * 10000 + sprintVersionParts[1] * 100 + sprintVersionParts[2]
+
+// Assinatura do APK de release. O keystore e as senhas ficam FORA do repositório, em ~/.sprint-signing
+// (ou em android/keystore.properties, também ignorado pelo git). Sem eles o release não é assinado.
+def sprintSigningFile = [
+    file("${System.getProperty('user.home')}/.sprint-signing/keystore.properties"),
+    rootProject.file('keystore.properties'),
+].find { it.exists() }
+def sprintSigning = new Properties()
+if (sprintSigningFile) sprintSigningFile.withInputStream { sprintSigning.load(it) }
+
 android {
     namespace = "com.workeric08.sprint"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +22,8 @@ android {
         applicationId "com.workeric08.sprint"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode sprintVersionCode
+        versionName sprintPkg.version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +31,27 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (sprintSigningFile) {
+                storeFile file(sprintSigning['storeFile'])
+                storePassword sprintSigning['storePassword']
+                keyAlias sprintSigning['keyAlias']
+                keyPassword sprintSigning['keyPassword']
+            }
+        }
+    }
     buildTypes {
+        debug {
+            // Debug e release têm assinaturas diferentes; com ids diferentes os dois convivem no aparelho
+            // (cada um com seus próprios dados) em vez de um exigir desinstalar o outro.
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (sprintSigningFile) signingConfig signingConfigs.release
         }
     }
 }

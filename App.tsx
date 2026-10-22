@@ -3,7 +3,12 @@ import { AppDataProvider, useAppData } from './contexts/AppDataContext';
 import CicloView from './components/CicloView';
 import ProgressView from './components/ProgressView';
 import SettingsPanel from './components/SettingsPanel';
+import WelcomeBackCard from './components/WelcomeBackCard';
+import { useStreak } from './hooks/useStreak';
+import { daysBetween } from './utils/dateUtils';
 import { hideSplash } from './utils/native';
+import { SETTING_KEYS } from './utils/settings';
+import { shouldShowWelcomeBack } from './utils/streakUtils';
 
 /**
  * Para adicionar um módulo novo (Simulado, Redação...), basta incluir uma entrada aqui:
@@ -30,9 +35,25 @@ const Logo: React.FC = () => (
 );
 
 const Shell: React.FC = () => {
-  const { loading, userName } = useAppData();
+  const { loading, userName, settings, setSetting } = useAppData();
+  const { streak, today, enabled: streakEnabled } = useStreak();
   const [activeTab, setActiveTab] = useState<TabId>('ciclo');
+  const [showWelcome, setShowWelcome] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+
+  // "Bem-vindo de volta": só ao abrir o app (não no meio do uso) e no máximo uma vez por dia.
+  useEffect(() => {
+    if (loading) return;
+    if (streakEnabled && shouldShowWelcomeBack(streak, today) && settings[SETTING_KEYS.welcomeBackShown] !== today) {
+      setShowWelcome(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  const dismissWelcome = () => {
+    setShowWelcome(false);
+    setSetting(SETTING_KEYS.welcomeBackShown, today);
+  };
 
   // Cada aba abre no topo, não na rolagem da aba anterior.
   useEffect(() => {
@@ -93,6 +114,15 @@ const Shell: React.FC = () => {
           <ActiveView />
         </div>
       </main>
+
+      {showWelcome && streak.lastStudyDate && (
+        <WelcomeBackCard
+          userName={userName}
+          daysAbsent={daysBetween(streak.lastStudyDate, today)}
+          longestStreak={streak.longestStreak}
+          onDismiss={dismissWelcome}
+        />
+      )}
 
       {/* Bottom nav (mobile). Telas de sprint/formulários são fixas em z-50+, então cobrem esta barra (z-40). */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 pt-3 safe-bottom flex items-center">

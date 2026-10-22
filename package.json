@@ -1,7 +1,7 @@
 {
   "name": "sprint-base",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,11 +16,15 @@
     "android:run": "node scripts/android.mjs run",
     "android:devices": "node scripts/android.mjs devices",
     "icons": "node scripts/generate-icons.mjs && capacitor-assets generate --android",
-    "e2e": "node scripts/e2e/run.mjs"
+    "e2e": "node scripts/e2e/run.mjs",
+    "android:release": "node scripts/android.mjs release",
+    "android:install-release": "node scripts/android.mjs install-release"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.5.3",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",
     "@fortawesome/fontawesome-free": "^6.5.1",
     "dexie": "^4.4.2",
@@ -36,6 +40,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.18",
+    "fake-indexeddb": "^6.2.6",
     "postcss": "^8.4.35",
     "puppeteer-core": "^25.15.0",
     "sharp": "^0.35.5",

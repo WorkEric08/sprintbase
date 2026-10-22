@@ -9,7 +9,7 @@
 //
 // No Android o script limpa os dados do app (pm clear) antes de começar — faça backup se precisar.
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +17,6 @@ import puppeteer from 'puppeteer-core';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = join(root, 'scripts', 'e2e', '.artifacts');
-const APP_ID = 'com.workeric08.sprint';
 const isWin = process.platform === 'win32';
 
 // ── argumentos ───────────────────────────────────────────────────────────────
@@ -28,6 +27,8 @@ const opt = (name, def) => {
   const next = argv[i + 1];
   return next && !next.startsWith('--') ? next : true;
 };
+// Id do app no aparelho: o build de debug (único com WebView inspecionável). --app-id para outro.
+const APP_ID = typeof opt('app-id') === 'string' ? opt('app-id') : 'com.workeric08.sprint.debug';
 const TARGET = opt('target', 'web');
 if (!['web', 'android'].includes(TARGET)) { console.error('--target deve ser web ou android'); process.exit(2); }
 const isAndroid = TARGET === 'android';
@@ -144,6 +145,50 @@ async function injectSubject(subject) {
     };
   }), subject);
 }
+
+const chipText = () => page.evaluate(() => document.querySelector('[data-testid="streak-chip"]')?.textContent ?? '');
+
+const todayCell = () => page.evaluate(() => {
+  const el = document.querySelector('[data-today="true"]');
+  return el ? { date: el.dataset.date, level: el.dataset.level, label: el.getAttribute('aria-label') ?? '' } : null;
+});
+
+/** Chave de hoje no fuso do navegador/aparelho (não do PC que roda o script). */
+const localKey = () => page.evaluate(() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+});
+
+/** Move um <input type="range"> como o React espera (setter nativo + evento input). */
+const setRange = (id, value) => page.evaluate(({ id, value }) => {
+  const el = document.getElementById(id);
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, String(value));
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}, { id, value });
+
+/**
+ * Substitui matérias e registros de bloco no banco. `logDaysAgo`: um registro ao meio-dia de cada
+ * "N dias atrás" (montado no fuso do próprio navegador). Zera o que havia antes.
+ */
+const seedDb = ({ logDaysAgo = [], deleteSettings = [] }) => page.evaluate(({ logDaysAgo, deleteSettings }) => new Promise((resolve, reject) => {
+  const req = indexedDB.open('SprintDB');
+  req.onerror = () => reject(req.error);
+  req.onsuccess = () => {
+    const database = req.result;
+    const tx = database.transaction(['subjects', 'blockLogs', 'settings'], 'readwrite');
+    tx.objectStore('subjects').clear();
+    tx.objectStore('blockLogs').clear();
+    const now = new Date();
+    logDaysAgo.forEach((n, i) => tx.objectStore('blockLogs').put({
+      id: `e2e-log-${n}-${i}`, subjectId: 'e2e-s', subjectTitle: 'E2E', subjectColor: '#6366f1',
+      timestamp: new Date(now.getFullYear(), now.getMonth(), now.getDate() - n, 12).getTime(),
+      questionsTotal: 0, questionsCorrect: 0, subtopic: '', selfScore: 3, flaggedForReview: false, blockType: 'study',
+    }));
+    deleteSettings.forEach(k => tx.objectStore('settings').delete(k));
+    tx.oncomplete = () => { database.close(); resolve(); };
+    tx.onerror = () => reject(tx.error);
+  };
+}), { logDaysAgo, deleteSettings });
 
 async function reload() {
   await page.reload({ waitUntil: 'load' });
@@ -456,6 +501,65 @@ async function main() {
     assert(await hasText('3 / 5'), 'bloco pulado em modo dev não contou');
   });
 
+  // ── Ofensiva e calendário ──
+  group('Ofensiva e calendário');
+  await check('chip da ofensiva no Ciclo mostra 1 dia (estudou hoje)', async () => {
+    await click('Ciclo');
+    await waitFor(async () => (await chipText()).includes('1d'), 'chip com "1d"');
+  });
+  await check('Progresso mostra o cartão da ofensiva e o detalhe expande', async () => {
+    await click('Progresso');
+    await waitText('1 dia seguido');
+    assert(await hasText('Você está construindo o hábito'), 'subtítulo acolhedor ausente');
+    await click('1 dia seguido');
+    await waitText('Recorde');
+    assert(await hasText('Total') && await hasText('dias bônus'), 'detalhe da ofensiva incompleto');
+  });
+  await check('calendário destaca hoje e mostra o nível da meta (3 blocos = parcial)', async () => {
+    const expected = await localKey();
+    const cell = await waitFor(todayCell, 'célula de hoje');
+    assert(cell.date === expected, `hoje destacado = ${cell.date}, esperado ${expected}`);
+    assert(cell.level === 'partial', `nível ${cell.level}, esperado partial`);
+    assert(cell.label.includes('3 blocos'), `rótulo: ${cell.label}`);
+  });
+  await check('tocar no dia abre o detalhe (blocos, questões, acerto, meta)', async () => {
+    await click('3 blocos');
+    await waitFor(() => page.$('[data-testid="day-detail"]'), 'painel do dia');
+    assert(await hasText('Meta parcial'), 'faltou o texto de meta parcial');
+    assert(await hasText('67%'), 'acerto do dia (67%) ausente');
+    assert(await hasText('2 de 3 corretas'), 'contagem de corretas ausente');
+  });
+  await check('anotação do dia é salva e sobrevive a recarregar', async () => {
+    await click('Adicionar anotação');
+    await typeInto('Anote algo', 'Revisar funções');
+    await click('Salvar', { exact: true });
+    await waitFor(async () => (await page.$eval('[data-testid="day-note"]', e => e.textContent).catch(() => '')) === 'Revisar funções', 'texto da anotação');
+    await reload();
+    await click('Progresso');
+    await click('3 blocos');
+    await waitFor(async () => (await page.$eval('[data-testid="day-note"]', e => e.textContent).catch(() => '')) === 'Revisar funções', 'anotação após recarregar');
+  });
+  await check('meta do calendário: salvar muda a cor do dia e persiste', async () => {
+    await click('Meta de blocos do calendário');
+    await waitText('Mínimo diário');
+    await setRange('goal-min', 1);
+    await setRange('goal-max', 2);
+    await click('Salvar meta');
+    await waitGone('Mínimo diário');
+    assert((await todayCell()).level === 'full', 'com meta 1–2, 3 blocos deveriam ser "full"');
+    await reload();
+    await click('Progresso');
+    assert((await waitFor(todayCell, 'célula de hoje')).level === 'full', 'meta não persistiu');
+  });
+  await check('botão voltar fecha o modal de meta sem salvar', async () => {
+    await click('Meta de blocos do calendário');
+    await waitText('Mínimo diário');
+    await setRange('goal-min', 3);
+    await target.pressBack();
+    await waitGone('Mínimo diário');
+    assert((await todayCell()).level === 'full', 'a meta mudou sem salvar');
+  });
+
   // ── Persistência ──
   group('Persistência');
   await check('dados e nome sobrevivem a recarregar', async () => {
@@ -468,6 +572,69 @@ async function main() {
       await android.relaunch();
       await waitFor(async () => !(await page.$('.animate-spin')), 'fim do carregamento', 15000);
       await waitText('3 / 5');
+    });
+  }
+
+  // ── Backup (web: o seletor de arquivos e a folha de compartilhar do Android são nativos e ficam no checklist manual) ──
+  if (!isAndroid) {
+    group('Backup (exportar / importar)');
+    const dlDir = mkdtempSync(join(tmpdir(), 'sprint-dl-'));
+    const client = await page.createCDPSession();
+    await client.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dlDir }).catch(async () => {
+      await client.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: dlDir });
+    });
+    const upload = async file => (await page.$('input[type="file"]')).uploadFile(file);
+    let backupFile;
+
+    await check('exporta um arquivo .json com todos os dados', async () => {
+      await click('Ajustes');
+      await click('Exportar');
+      const name = await waitFor(() => readdirSync(dlDir).find(f => /^sprint-backup-\d{4}-\d{2}-\d{2}\.json$/.test(f)), 'arquivo de backup baixado', 8000);
+      backupFile = join(dlDir, name);
+      const data = JSON.parse(readFileSync(backupFile, 'utf-8'));
+      assert(data.format === 'sprint-backup' && data.version === 1, 'cabeçalho do backup incorreto');
+      assert(data.tables.subjects.length === 2, `esperava 2 matérias, veio ${data.tables.subjects.length}`);
+      assert(data.tables.blockLogs.length >= 1, 'sem registros de bloco');
+      assert(data.tables.settings.some(s => s.key === 'user_name' && s.value === 'DevInfo'), 'nome ausente no backup');
+      assert('reviewItems' in data.tables && 'simuladoRecords' in data.tables, 'tabelas dos módulos futuros ausentes');
+      await waitText('Backup gerado: 2 matérias');
+    });
+    await check('importar substitui os dados atuais e restaura tudo', async () => {
+      await click('Ciclo');
+      await click('Excluir matéria', { nth: 1 });
+      await click('Sim, excluir matéria');
+      await waitGone('3 / 5');
+      await click('Ajustes');
+      await upload(backupFile);
+      await waitText('Substituir seus dados?');
+      assert(await hasText('2 matérias'), 'resumo do backup ausente no diálogo');
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'load' }),
+        click('Sim, restaurar backup'),
+      ]);
+      await waitFor(async () => !(await page.$('.animate-spin')), 'fim do carregamento', 10000);
+      await waitText('3 / 5');
+      assert(await hasText('devinfo'), 'nome não voltou');
+      assert(await page.evaluate(() => document.documentElement.classList.contains('dark')), 'tema não voltou');
+    });
+    await check('arquivo inválido é recusado sem mexer nos dados', async () => {
+      const bad = join(dlDir, 'qualquer.json');
+      writeFileSync(bad, '{"foo": 1}');
+      await click('Ajustes');
+      await upload(bad);
+      await waitText('não é um backup do Sprint');
+      assert(!(await hasText('Substituir seus dados?')), 'abriu confirmação para arquivo inválido');
+      await click('Ciclo');
+      assert(await hasText('3 / 5'), 'os dados mudaram');
+    });
+    await check('cancelar a importação não altera nada', async () => {
+      await click('Ajustes');
+      await upload(backupFile);
+      await waitText('Substituir seus dados?');
+      await click('Cancelar');
+      await waitGone('Substituir seus dados?');
+      await click('Ciclo');
+      assert(await hasText('3 / 5'), 'os dados mudaram');
     });
   }
 
@@ -484,6 +651,69 @@ async function main() {
     await waitText('Excluir matéria?');
     await click('Sim, excluir matéria');
     await waitGone('rápida');
+  });
+
+  // ── Ofensiva: situações semeadas no banco (apaga matérias e registros!) ──
+  group('Ofensiva: ausência, bônus e virada do dia');
+  await check('ausente há 5 dias (com recorde de 5): mostra "bem-vindo de volta" sem culpa', async () => {
+    await seedDb({ logDaysAgo: [9, 8, 7, 6, 5], deleteSettings: ['welcome_back_shown'] });
+    await reload();
+    await waitText('Bem-vindo de volta');
+    assert(await hasText('Faz 5 dias'), 'tempo de ausência incorreto');
+    assert(await hasText('Seu recorde: 5 dias seguidos'), 'recorde ausente');
+    assert(!/perdeu|falhou|culpa|quebrou/.test(await bodyText()), 'texto com tom de cobrança');
+  });
+  await check('voltar do aparelho dispensa o aviso e ele não reaparece no mesmo dia', async () => {
+    await target.pressBack();
+    await waitGone('Bem-vindo de volta');
+    await reload();
+    await sleep(600);
+    assert(!(await hasText('Bem-vindo de volta')), 'o aviso reapareceu no mesmo dia');
+    await waitFor(async () => (await chipText()).includes('—'), 'chip sem sequência');
+  });
+  await check('7 dias seguidos até anteontem: sequência viva com bônus em uso', async () => {
+    await seedDb({ logDaysAgo: [8, 7, 6, 5, 4, 3, 2] });
+    await reload();
+    await waitFor(async () => (await chipText()).includes('7d'), 'chip com "7d"');
+    await click('Progresso');
+    await waitText('7 dias seguidos');
+    await waitText('Usamos um dia bônus');
+  });
+  await check('desligar a ofensiva esconde chip e cartão, mas o calendário continua', async () => {
+    await click('Ajustes');
+    await click('Mostrar ofensiva');
+    assert(await page.$eval('[aria-label="Mostrar ofensiva"]', e => e.getAttribute('aria-checked')) === 'false', 'interruptor não desligou');
+    await click('Ciclo');
+    assert(!(await page.$('[data-testid="streak-chip"]')), 'chip ainda visível');
+    await click('Progresso');
+    assert(!(await page.$('[data-testid="streak-widget"]')), 'cartão ainda visível');
+    assert(!!(await page.$('[data-testid="calendar"]')), 'calendário sumiu');
+    await reload();
+    await click('Ajustes');
+    assert(await page.$eval('[aria-label="Mostrar ofensiva"]', e => e.getAttribute('aria-checked')) === 'false', 'preferência não persistiu');
+    await click('Mostrar ofensiva');
+    await click('Ciclo');
+    await waitFor(async () => (await chipText()).includes('7d'), 'chip de volta');
+  });
+  await check('virada do dia com o app aberto: "hoje" e a ofensiva se atualizam sozinhos', async () => {
+    await click('Progresso');
+    const before = (await waitFor(todayCell, 'célula de hoje')).date;
+    await page.evaluate(() => {
+      const RealDate = Date;
+      const shift = 86_400_000; // relógio avança 1 dia
+      class ShiftedDate extends RealDate {
+        constructor(...args) { super(...(args.length ? args : [RealDate.now() + shift])); }
+        static now() { return RealDate.now() + shift; }
+      }
+      window.Date = ShiftedDate;
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await waitFor(async () => (await todayCell())?.date !== before, 'hoje avançar um dia');
+    const after = (await todayCell()).date;
+    assert(after > before, `hoje não avançou (${before} → ${after})`);
+    // Antes: último estudo anteontem com bônus. Agora faz 3 dias: a sequência já não vale.
+    await waitText('Vamos começar!');
+    await reload(); // restaura o relógio real
   });
 
   // ── Layout / plataforma ──
@@ -535,8 +765,11 @@ async function main() {
       try {
         await page.reload({ waitUntil: 'load' });
         await waitFor(async () => !(await page.$('.animate-spin')), 'fim do carregamento offline', 10000);
-        assert(await page.evaluate(() => navigator.onLine === false), 'o navegador não está offline');
-        await waitText('DevInfo'); // nome vindo do IndexedDB: prova que shell e dados carregaram sem rede
+        await waitText('DevInfo'); // nome vindo do IndexedDB: prova que shell e dados carregaram
+        // `navigator.onLine` demora a refletir a emulação depois do reload; o que vale é a rede de fato inacessível.
+        const reachable = await page.evaluate(() =>
+          fetch(`/__sem_rede__?${Date.now()}`, { cache: 'no-store' }).then(() => true, () => false));
+        assert(!reachable, 'a rede ainda responde: o teste offline não está valendo');
       } finally {
         await page.setOfflineMode(false);
       }
@@ -548,7 +781,13 @@ async function main() {
     assert(externalRequests.length === 0, `requisições externas: ${externalRequests.slice(0, 3).join(', ')}`);
   });
   await check('sem erros no console', async () => {
-    const real = pageErrors.filter(e => !/favicon|DevTools|Download the React DevTools/i.test(e));
+    // A requisição de prova do teste offline falha de propósito e o Chrome a registra no console: aceita 1 só.
+    let offlineProbeErrors = PREVIEW ? 1 : 0;
+    const real = pageErrors.filter(e => {
+      if (/favicon|DevTools|Download the React DevTools/i.test(e)) return false;
+      if (/ERR_INTERNET_DISCONNECTED/.test(e) && offlineProbeErrors > 0) { offlineProbeErrors--; return false; }
+      return true;
+    });
     assert(real.length === 0, `${real.length} erro(s): ${real.slice(0, 2).join(' | ')}`);
   });
 }

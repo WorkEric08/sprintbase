@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Só no build de debug: distingue do app de release na gaveta de apps. -->
+    <string name="app_name">Sprint Debug</string>
+</resources>

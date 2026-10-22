@@ -1,6 +1,8 @@
 import React from 'react';
 import { useAppData } from '../contexts/AppDataContext';
 import { isDevModeUser } from '../utils/devMode';
+import { SETTING_KEYS, isStreakEnabled } from '../utils/settings';
+import BackupCard from './BackupCard';
 import PWACard from './PWACard';
 
 const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
@@ -11,7 +13,8 @@ const THEME_OPTIONS = [
 ] as const;
 
 const SettingsPanel: React.FC = () => {
-  const { userName, setUserName, theme, setTheme } = useAppData();
+  const { userName, setUserName, theme, setTheme, settings, setSetting } = useAppData();
+  const streakEnabled = isStreakEnabled(settings);
 
   return (
     <div className="max-w-lg mx-auto space-y-7">
@@ -57,6 +60,27 @@ const SettingsPanel: React.FC = () => {
           ))}
         </div>
       </div>
+
+      <div className="space-y-2">
+        <span className={LABEL}>Ofensiva</span>
+        <button
+          role="switch"
+          aria-checked={streakEnabled}
+          aria-label="Mostrar ofensiva"
+          onClick={() => setSetting(SETTING_KEYS.streakEnabled, streakEnabled ? 'false' : 'true')}
+          className="w-full flex items-center justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3.5 text-left active:scale-[0.99] transition-transform"
+        >
+          <span className="min-w-0">
+            <span className="block text-sm font-bold text-gray-800 dark:text-gray-100">Mostrar ofensiva</span>
+            <span className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">Dias seguidos de estudo e dias bônus. O calendário continua aparecendo.</span>
+          </span>
+          <span className={`relative w-11 h-6 rounded-full shrink-0 transition-colors ${streakEnabled ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}`}>
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${streakEnabled ? 'translate-x-5' : ''}`} />
+          </span>
+        </button>
+      </div>
+
+      <BackupCard />
 
       <PWACard />
 

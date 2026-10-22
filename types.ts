@@ -71,6 +71,23 @@ export interface BlockLog {
   banca?: string;
 }
 
+// ── Ofensiva (streak) ─────────────────────────────────────────────────────
+
+/** Estado derivado (nunca gravado): calculado a partir dos dias em que houve estudo. */
+export interface StreakState {
+  /** Dias de estudo seguidos (dias bônus preenchem uma falta, mas não somam). */
+  currentStreak: number;
+  /** Dias bônus guardados (0–3). */
+  bonusBalance: number;
+  /** Maior sequência de dias consecutivos, sem contar bônus. */
+  longestStreak: number;
+  totalStudyDays: number;
+  /** Último dia com estudo (YYYY-MM-DD, fuso local), se houver. */
+  lastStudyDate: string | null;
+  /** Um dia bônus cobriu ontem ou hoje: mostra o aviso acolhedor. */
+  bonusUsedRecently: boolean;
+}
+
 // ── Sprint ────────────────────────────────────────────────────────────────
 
 export type SprintItem =

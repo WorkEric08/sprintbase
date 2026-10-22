@@ -4,6 +4,19 @@
 
 Não precisa de conta, de internet nem de servidor: os dados ficam salvos no próprio dispositivo.
 
+## Baixar o app (Android)
+
+A versão mais recente do aplicativo está na página de **[Releases](https://github.com/WorkEric08/sprintbase/releases/latest)**: baixe o arquivo **`Sprint.apk`** (ou use o [link direto](https://github.com/WorkEric08/sprintbase/releases/latest/download/Sprint.apk)). Funciona em Android 7.0 ou superior.
+
+Para instalar:
+
+1. Abra o link acima **no celular Android** e baixe o `Sprint.apk`.
+2. Toque no arquivo baixado. Na primeira vez, o Android pede para permitir a instalação de apps desconhecidos para o navegador (ou app de arquivos) que você usou: ative **Permitir desta fonte** e volte.
+3. Toque em **Instalar**. Se o Play Protect mostrar um aviso, toque em **Mais detalhes → Instalar mesmo assim**. O aviso aparece porque o app não vem da Play Store; o arquivo é assinado e o código está neste repositório.
+4. Abra o **Sprint**.
+
+> Os dados ficam só no aparelho. Desinstalar o app apaga o histórico: use **Ajustes → Seus dados → Exportar** para guardar um backup antes de desinstalar ou trocar de celular.
+
 ## Como funciona
 
 O método gira em torno de três ideias:
@@ -39,9 +52,17 @@ O método gira em torno de três ideias:
 - Distribuição dos blocos por tipo (estudo, revisão e questões).
 - Detalhamento por matéria dentro do período escolhido.
 
+### Ofensiva e calendário
+- **Ofensiva**: quantos dias seguidos você estudou, com o **recorde** e o total de dias. Os textos só incentivam, nunca cobram.
+- **Dias bônus**: a cada 7 dias de estudo seguidos você ganha 1 dia bônus (até 3 guardados). Se faltar um dia, o bônus cobre a falta e a sequência continua.
+- **Bem-vindo de volta**: depois de alguns dias sem estudar, o app recebe você de forma acolhedora, uma vez por dia.
+- **Calendário** dos últimos 4 meses, colorido pela sua **meta diária de blocos** (mínimo e máximo que você define). Toque em um dia para ver blocos, questões e acerto, e escreva uma **anotação** sobre ele.
+- A ofensiva pode ser desligada em Ajustes; o calendário continua aparecendo.
+
 ### Configurações
 - Seu nome.
 - Tema **claro** ou **escuro**, aplicado antes da tela carregar para não piscar.
+- **Backup**: exporta todos os seus dados para um arquivo e importa de volta (útil para trocar de aparelho ou antes de desinstalar).
 
 ## Tecnologias
 
@@ -54,6 +75,9 @@ O método gira em torno de três ideias:
 | Armazenamento local | [Dexie](https://dexie.org/) (IndexedDB) |
 | Seletor de cores | [react-colorful](https://github.com/omgovich/react-colorful) |
 | Ícones | [Font Awesome](https://fontawesome.com/) (empacotado, funciona offline) |
+| Aplicativo Android | [Capacitor](https://capacitorjs.com/) |
+| Versão web instalável (PWA) | [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) |
+| Testes | [Vitest](https://vitest.dev/) (unitários) e [Puppeteer](https://pptr.dev/) (ponta a ponta, na web e no app) |
 
 ## Como rodar
 
@@ -81,6 +105,24 @@ O app abre em [http://localhost:3001](http://localhost:3001). Como o servidor es
 | `npm run build` | Gera a versão de produção na pasta `dist/` |
 | `npm run preview` | Serve localmente a versão gerada pelo build |
 | `npm run lint` | Verifica os tipos com o TypeScript (`tsc --noEmit`) |
+| `npm test` | Roda os testes unitários |
+| `npm run e2e` | Teste ponta a ponta no navegador (veja abaixo para o aplicativo no celular) |
+
+### Gerar o APK
+
+Além do Node.js, é preciso o **JDK 21** e o **Android SDK** (plataforma 36). O script encontra o JDK e o SDK pelas variáveis `JAVA_HOME` e `ANDROID_HOME`.
+
+| Comando | O que faz |
+|---|---|
+| `npm run android:build` | Gera o APK de **debug** (`com.workeric08.sprint.debug`) |
+| `npm run android:run` | Gera, instala e abre o app de debug no celular/emulador conectado |
+| `npm run android:release` | Gera o APK **assinado** para distribuição em `release/Sprint.apk`, com o checksum SHA-256 |
+| `npm run android:devices` | Lista os aparelhos conectados |
+| `npm run e2e -- --target android` | Roda o teste ponta a ponta no app de debug conectado (**apaga os dados do app**) |
+
+O APK de release é assinado com uma chave que fica **fora do repositório**, em `~/.sprint-signing` (veja o `LEIA-ME.txt` que ela contém). Quem clonar o projeto e não tiver essa chave consegue gerar o APK de debug normalmente, mas não o de release.
+
+Para abrir no Android Studio, abra a pasta `android/` e rode `npm run android:sync` antes de cada build, para o aplicativo empacotar a versão mais recente do código.
 
 ## Estrutura do projeto
 
@@ -92,27 +134,30 @@ O app abre em [http://localhost:3001](http://localhost:3001). Como o servidor es
 ├── db.ts                   # Banco de dados local (Dexie / IndexedDB)
 ├── components/             # Telas, modais e cartões da interface
 ├── contexts/               # Contexto com a fonte única de dados do app
-├── hooks/                  # Hooks reutilizáveis (cronômetro, botão voltar)
-├── utils/                  # Funções auxiliares (formatação, geração de ids)
-└── public/                 # Arquivos estáticos (ícone)
+├── hooks/                  # Hooks reutilizáveis (cronômetro, botão voltar, ofensiva)
+├── utils/                  # Lógica pura e testada (datas, ofensiva, calendário, backup)
+├── services/               # Serviços da versão web (PWA)
+├── android/                # Projeto Android gerado pelo Capacitor
+├── scripts/                # Scripts do APK, dos ícones e dos testes ponta a ponta
+└── public/                 # Arquivos estáticos (ícones)
 ```
 
 A navegação é organizada em três abas: **Ciclo**, **Progresso** e **Ajustes**. Todos os dados passam por um único contexto (`AppDataContext`), que atualiza a tela de imediato e grava no banco local em seguida.
 
 ## Seus dados
 
-Tudo é armazenado no navegador, em IndexedDB, e não é enviado para nenhum servidor. Isso significa que:
+Tudo é armazenado no próprio aparelho (IndexedDB) e não é enviado para nenhum servidor. Isso significa que:
 
 - o app funciona sem internet;
-- os dados ficam presos àquele navegador e dispositivo;
-- limpar os dados do site no navegador apaga também o seu histórico de estudos.
+- os dados ficam presos àquele aparelho (ou navegador);
+- desinstalar o app, ou limpar os dados do site no navegador, apaga também o seu histórico de estudos.
+
+Para não perder nada, use **Ajustes → Seus dados → Exportar**: o app gera um arquivo de backup com tudo, e **Importar** restaura esse arquivo em outro aparelho ou depois de reinstalar. Importar **substitui** os dados atuais, e o app pede confirmação antes.
 
 ## Próximos passos
 
 O Sprint Base é uma base enxuta, pensada para crescer aos poucos. Algumas ideias para as próximas versões:
 
-- Ofensiva de dias consecutivos e calendário de estudos
 - Simulados cronometrados
 - Treino de redação
 - Revisão espaçada
-- Versão para Android (APK)

@@ -3,6 +3,7 @@ import { db } from '../db';
 import { BlockLog, BlockType, PostBlockData, Subject, SubjectInput } from '../types';
 import { uid } from '../utils/id';
 import { syncSystemBars } from '../utils/native';
+import { SETTING_KEYS } from '../utils/settings';
 
 export type Theme = 'light' | 'dark';
 
@@ -12,6 +13,8 @@ interface AppData {
   blockLogs: BlockLog[];
   userName: string;
   theme: Theme;
+  /** Todas as configurações (tabela `settings`, chave → texto). Valores estruturados vão como JSON. */
+  settings: Record<string, string>;
   addSubject: (input: SubjectInput) => void;
   updateSubject: (id: string, input: SubjectInput) => void;
   deleteSubject: (id: string) => void;
@@ -22,6 +25,9 @@ interface AppData {
   saveBlockLog: (subjectId: string, data: PostBlockData, blockType: BlockType) => void;
   setUserName: (name: string) => void;
   setTheme: (theme: Theme) => void;
+  /** Grava uma configuração qualquer (otimista + Dexie). */
+  setSetting: (key: string, value: string) => void;
+  removeSetting: (key: string) => void;
 }
 
 const AppDataContext = createContext<AppData | null>(null);
@@ -37,6 +43,33 @@ function logError(what: string, e: unknown) {
 }
 
 /**
+ * O app original guardava a meta e as anotações do calendário no localStorage. Se este app for
+ * aberto no mesmo endereço (mesma origem), traz esses valores para o banco uma única vez, para
+ * entrarem no backup. Só preenche chaves que ainda não existem; o localStorage fica intocado.
+ */
+const LEGACY_LOCAL_STORAGE: [legacyKey: string, settingKey: string][] = [
+  ['sprint_calendar_goal', SETTING_KEYS.calendarGoal],
+  ['sprint_day_notes', SETTING_KEYS.dayNotes],
+];
+
+function migrateLegacyLocalStorage(loaded: Record<string, string>) {
+  for (const [legacyKey, settingKey] of LEGACY_LOCAL_STORAGE) {
+    if (loaded[settingKey] !== undefined) continue;
+    try {
+      const raw = localStorage.getItem(legacyKey);
+      if (!raw) continue;
+      loaded[settingKey] = raw;
+      db.settings.put({ key: settingKey, value: raw }).catch(e => logError(`migrar "${legacyKey}"`, e));
+    } catch { /* localStorage indisponível */ }
+  }
+}
+
+/** Espelho em localStorage só para o script do index.html evitar flash de tema no próximo boot. */
+function mirrorTheme(theme: Theme) {
+  try { localStorage.setItem('sprint_theme', theme); } catch { /* ignorado */ }
+}
+
+/**
  * Fonte única de dados do app. Toda tela lê e grava por aqui — não há hooks de dados
  * duplicados, então Ciclo, Sprint e Progresso sempre veem o mesmo estado.
  *
@@ -48,10 +81,12 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjectsState] = useState<Subject[]>([]);
   const [blockLogs, setBlockLogsState] = useState<BlockLog[]>([]);
-  const [userName, setUserNameState] = useState('');
-  const [theme, setThemeState] = useState<Theme>(() =>
-    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-  );
+  const [settings, setSettingsState] = useState<Record<string, string>>({});
+  // Tema inicial = o que o script do index.html já aplicou (evita flash até o banco carregar).
+  const initialTheme = useRef<Theme>(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+
+  const userName = settings.user_name ?? '';
+  const theme: Theme = settings.theme === 'light' || settings.theme === 'dark' ? settings.theme : initialTheme.current;
 
   const subjectsRef = useRef<Subject[]>([]);
   const blockLogsRef = useRef<BlockLog[]>([]);
@@ -71,18 +106,20 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     let cancelled = false;
     (async () => {
       try {
-        const [subjectRows, logRows, themeRow, nameRow] = await Promise.all([
+        const [subjectRows, logRows, settingRows] = await Promise.all([
           db.subjects.toArray(),
           db.blockLogs.orderBy('timestamp').reverse().toArray(),
-          db.settings.get('theme'),
-          db.settings.get('user_name'),
+          db.settings.toArray(),
         ]);
         if (cancelled) return;
         // Ordem de criação; matérias antigas (sem createdAt) mantêm a ordem do banco.
         commitSubjects([...subjectRows].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0)));
         commitBlockLogs(logRows);
-        if (nameRow) setUserNameState(nameRow.value);
-        if (themeRow && (themeRow.value === 'light' || themeRow.value === 'dark')) setThemeState(themeRow.value);
+        const loaded: Record<string, string> = Object.fromEntries(settingRows.map(r => [r.key, r.value]));
+        migrateLegacyLocalStorage(loaded);
+        setSettingsState(loaded);
+        // Reaplica o espelho do tema (some após reinstalar/restaurar backup) para o próximo boot não piscar.
+        if (loaded.theme === 'light' || loaded.theme === 'dark') mirrorTheme(loaded.theme);
       } catch (e) {
         logError('carregar dados', e);
       } finally {
@@ -165,26 +202,35 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [commitBlockLogs]);
 
   // ── Configurações ───────────────────────────────────────────────────────
-  const setUserName = useCallback((name: string) => {
-    setUserNameState(name);
-    db.settings.put({ key: 'user_name', value: name }).catch(e => logError('salvar nome', e));
+  const setSetting = useCallback((key: string, value: string) => {
+    setSettingsState(prev => ({ ...prev, [key]: value }));
+    db.settings.put({ key, value }).catch(e => logError(`salvar configuração "${key}"`, e));
   }, []);
+
+  const removeSetting = useCallback((key: string) => {
+    setSettingsState(prev => {
+      if (!(key in prev)) return prev;
+      const { [key]: _removed, ...rest } = prev;
+      return rest;
+    });
+    db.settings.delete(key).catch(e => logError(`remover configuração "${key}"`, e));
+  }, []);
+
+  const setUserName = useCallback((name: string) => setSetting('user_name', name), [setSetting]);
 
   const setTheme = useCallback((next: Theme) => {
-    setThemeState(next);
-    // Espelho em localStorage só para o script do index.html evitar flash de tema.
-    try { localStorage.setItem('sprint_theme', next); } catch { /* ignorado */ }
-    db.settings.put({ key: 'theme', value: next }).catch(e => logError('salvar tema', e));
-  }, []);
+    mirrorTheme(next);
+    setSetting('theme', next);
+  }, [setSetting]);
 
   const value = useMemo<AppData>(() => ({
-    loading, subjects, blockLogs, userName, theme,
+    loading, subjects, blockLogs, userName, theme, settings,
     addSubject, updateSubject, deleteSubject, resetSubjectBlocks,
-    completeBlock, saveBlockLog, setUserName, setTheme,
+    completeBlock, saveBlockLog, setUserName, setTheme, setSetting, removeSetting,
   }), [
-    loading, subjects, blockLogs, userName, theme,
+    loading, subjects, blockLogs, userName, theme, settings,
     addSubject, updateSubject, deleteSubject, resetSubjectBlocks,
-    completeBlock, saveBlockLog, setUserName, setTheme,
+    completeBlock, saveBlockLog, setUserName, setTheme, setSetting, removeSetting,
   ]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { BLOCK_TYPES, BLOCK_TYPE_COLORS, BLOCK_TYPE_LABELS, BlockType } from '../types';
 import { useAppData } from '../contexts/AppDataContext';
+import { useStreak } from '../hooks/useStreak';
 import { Period, formatMinutes, getPeriodStart } from '../utils/format';
+import HeatmapView from './HeatmapView';
+import StreakWidget from './StreakWidget';
 
 const PERIODS: { id: Period; label: string }[] = [
   { id: 'day', label: 'Dia' },
@@ -22,6 +25,7 @@ function accuracyColor(pct: number | null): string {
 
 const ProgressView: React.FC = () => {
   const { subjects, blockLogs } = useAppData();
+  const { streak, enabled: streakEnabled } = useStreak();
   const [period, setPeriod] = useState<Period>('day');
 
   // Progresso geral: blocos concluídos / meta de todas as matérias.
@@ -94,6 +98,8 @@ const ProgressView: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {streakEnabled && <StreakWidget state={streak} />}
 
       {/* Seletor de período */}
       <div className="flex items-center justify-between">
@@ -203,6 +209,12 @@ const ProgressView: React.FC = () => {
           Nenhuma atividade neste período
         </div>
       )}
+
+      {/* Calendário de estudos */}
+      <div className="space-y-3 pt-2">
+        <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Calendário</h3>
+        <HeatmapView />
+      </div>
     </div>
   );
 };
