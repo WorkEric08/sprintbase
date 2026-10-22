@@ -146,6 +146,27 @@ async function injectSubject(subject) {
   }), subject);
 }
 
+/**
+ * Mede, a cada quadro de animação, se a tela cheia do sprint existe e está opaca, e se ela cobre o centro
+ * da tela. Serve para provar que nenhuma transição deixa a tela de baixo aparecer.
+ */
+const startFrameSampler = () => page.evaluate(() => {
+  window.__frames = [];
+  window.__sampling = true;
+  const loop = () => {
+    const el = document.querySelector('[data-testid="sprint-runner"]');
+    const mid = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+    window.__frames.push({
+      runner: !!el,
+      opacity: el ? Number(getComputedStyle(el).opacity) : 0,
+      covers: !!(el && mid && el.contains(mid)),
+    });
+    if (window.__sampling) requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+});
+const stopFrameSampler = () => page.evaluate(() => { window.__sampling = false; return window.__frames; });
+
 const chipText = () => page.evaluate(() => document.querySelector('[data-testid="streak-chip"]')?.textContent ?? '');
 
 const todayCell = () => page.evaluate(() => {
@@ -454,6 +475,43 @@ async function main() {
     await click('Sim, encerrar');
     await waitText('Montar sprint');
     assert(await hasText('2 / 5'), 'o bloco encerrado foi contabilizado');
+  });
+
+  await check('pular etapas nunca deixa a tela inicial aparecer por baixo (sem "piscar")', async () => {
+    await click('Montar sprint');
+    await waitText('Sprint vazio');
+    await click('rápida');
+    await click('Pausa', { exact: true });
+    await click('rápida');
+    await click('rápida');
+    await startFrameSampler();
+    let frames = [];
+    try {
+      await click('Iniciar ·'); // entrada: Montar sprint → 1º bloco
+      await waitText('restantes');
+      await click('Pular → próximo'); // bloco → pausa
+      await waitText('Pular pausa');
+      await click('Pular pausa'); // pausa → bloco
+      await waitText('restantes');
+      await click('Pular → próximo'); // bloco → bloco (o último fica de fora: ao acabar o sprint a tela inicial deve voltar)
+      await waitText('restantes');
+      await sleep(300);
+    } finally {
+      frames = await stopFrameSampler();
+      // Deixa o estado limpo mesmo se algo falhou: um sprint esquecido aberto derrubaria os testes seguintes em cascata.
+      if (await page.$('[data-testid="sprint-runner"]')) {
+        await click('Encerrar sprint', { exact: true }).catch(() => {});
+        await click('Sim, encerrar').catch(() => {});
+        await waitText('Montar sprint').catch(() => {});
+      }
+    }
+    const first = frames.findIndex(f => f.runner);
+    assert(first !== -1, 'o amostrador nunca viu a tela do sprint');
+    const exposed = frames.slice(first).filter(f => !f.runner || f.opacity < 1);
+    assert(exposed.length === 0, `${exposed.length} quadro(s) com a tela do sprint ausente ou translúcida (opacidade mínima ${Math.min(...exposed.map(f => f.opacity ?? 0)).toFixed(2)}): a tela inicial apareceu`);
+    // o fundo opaco não pode ser só do contêiner: ele precisa cobrir a tela toda
+    assert(frames.slice(first).every(f => f.covers), 'a tela do sprint não cobria o centro da tela em algum quadro');
+    assert(await hasText('2 / 5'), 'pular etapas fora do modo dev não deveria contabilizar blocos');
   });
 
   // ── Progresso ──

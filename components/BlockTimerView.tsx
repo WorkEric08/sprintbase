@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
   BLOCK_TYPE_COLORS, BLOCK_TYPE_LABELS, BlockLog, BlockType, PostBlockData, Subject,
 } from '../types';
@@ -81,9 +80,11 @@ const BlockTimerView: React.FC<Props> = ({
 
   const done = subject.completedBlocks.length;
 
-  return createPortal(
+  // Só o conteúdo: a tela cheia (fundo opaco) é do SprintRunnerView. O fade-in é do texto e dos botões,
+  // nunca do fundo, então trocar de bloco não deixa a tela inicial aparecer por baixo.
+  return (
     <div
-      className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-between px-8 pb-8 animate-fade-in"
+      className="relative h-full w-full overflow-hidden flex flex-col items-center justify-between px-8 pb-8 animate-fade-in"
       style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 2rem)' }}
     >
       <div className="w-full flex justify-between items-center">
@@ -197,8 +198,7 @@ const BlockTimerView: React.FC<Props> = ({
           onSkip={skipLog}
         />
       )}
-    </div>,
-    document.body
+    </div>
   );
 };
 

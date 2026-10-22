@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { Subject } from '../types';
 import { useBackButton } from '../hooks/useBackButton';
 import { useCountdown } from '../hooks/useCountdown';
@@ -30,9 +29,10 @@ const BreakTimerView: React.FC<Props> = ({ duration, nextSubject, breakIndex, to
   // Pequena espera antes de avançar para o "00:00" ser visto.
   const { secondsLeft, fraction } = useCountdown(duration * 60, () => { setTimeout(finish, 600); });
 
-  return createPortal(
+  // Só o conteúdo: a tela cheia (fundo opaco) é do SprintRunnerView (ver o comentário lá).
+  return (
     <div
-      className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-between px-8 pb-8 animate-fade-in"
+      className="relative h-full w-full overflow-hidden flex flex-col items-center justify-between px-8 pb-8 animate-fade-in"
       style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 2rem)' }}
     >
       <div className="w-full flex justify-between items-center">
@@ -79,8 +79,7 @@ const BreakTimerView: React.FC<Props> = ({ duration, nextSubject, breakIndex, to
           Pular pausa
         </button>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 };
 

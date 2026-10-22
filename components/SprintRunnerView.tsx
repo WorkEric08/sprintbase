@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { SprintItem } from '../types';
 import { useAppData } from '../contexts/AppDataContext';
 import { isDevModeUser } from '../utils/devMode';
@@ -13,6 +14,11 @@ interface Props {
 /**
  * Percorre a fila do sprint item a item. Lê as matérias do contexto (estado ao vivo),
  * então o progresso mostrado no cronômetro e gravado em `completeBlock` é sempre o atual.
+ *
+ * A tela cheia (fundo opaco) pertence a ESTE componente e dura o sprint inteiro; cada bloco ou pausa
+ * é só o conteúdo dela. Se cada etapa fosse a sua própria tela cheia com animação de entrada, ao
+ * pular uma etapa a antiga sumiria na hora e a nova nasceria transparente, deixando a tela inicial
+ * à mostra por uns 200 ms.
  */
 const SprintRunnerView: React.FC<Props> = ({ items, onClose }) => {
   const { subjects, blockLogs, userName, completeBlock, saveBlockLog } = useAppData();
@@ -36,44 +42,45 @@ const SprintRunnerView: React.FC<Props> = ({ items, onClose }) => {
     if (subjectMissing) advance();
   }, [subjectMissing]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!current || !subject && current.type === 'study') return null;
-
-  const studyItems = items.filter(i => i.type === 'study');
-  const breakItems = items.filter(i => i.type === 'break');
-  const nextStudy = items.slice(index + 1).find(i => i.type === 'study');
-  const nextSubject = nextStudy?.type === 'study'
-    ? subjects.find(s => s.id === nextStudy.subjectId) ?? null
-    : null;
-
-  if (current.type === 'break') {
-    return (
+  let screen: React.ReactNode = null;
+  if (current?.type === 'break') {
+    const nextStudy = items.slice(index + 1).find(i => i.type === 'study');
+    const nextSubject = nextStudy?.type === 'study'
+      ? subjects.find(s => s.id === nextStudy.subjectId) ?? null
+      : null;
+    screen = (
       <BreakTimerView
         key={current.id}
         duration={current.duration}
         nextSubject={nextSubject}
         breakIndex={items.slice(0, index + 1).filter(i => i.type === 'break').length}
-        totalBreaks={breakItems.length}
+        totalBreaks={items.filter(i => i.type === 'break').length}
         onDone={advance}
+      />
+    );
+  } else if (current && subject) {
+    screen = (
+      <BlockTimerView
+        key={current.id}
+        subject={subject}
+        blockType={current.blockType}
+        cycleIndex={items.slice(0, index + 1).filter(i => i.type === 'study').length - 1}
+        cycleTotal={items.filter(i => i.type === 'study').length}
+        blockLogs={blockLogs}
+        isDevMode={isDevModeUser(userName)}
+        onComplete={() => completeBlock(subject.id, current.blockType)}
+        onSaveLog={data => saveBlockLog(subject.id, data, current.blockType)}
+        onNext={advance}
+        onExit={onClose}
       />
     );
   }
 
-  if (!subject) return null; // inalcançável (tratado acima); ajuda o TypeScript a estreitar o tipo
-
-  return (
-    <BlockTimerView
-      key={current.id}
-      subject={subject}
-      blockType={current.blockType}
-      cycleIndex={items.slice(0, index + 1).filter(i => i.type === 'study').length - 1}
-      cycleTotal={studyItems.length}
-      blockLogs={blockLogs}
-      isDevMode={isDevModeUser(userName)}
-      onComplete={() => completeBlock(subject.id, current.blockType)}
-      onSaveLog={data => saveBlockLog(subject.id, data, current.blockType)}
-      onNext={advance}
-      onExit={onClose}
-    />
+  return createPortal(
+    <div data-testid="sprint-runner" className="fixed inset-0 z-[60] overflow-hidden bg-gray-50 dark:bg-gray-950">
+      {screen}
+    </div>,
+    document.body
   );
 };
 

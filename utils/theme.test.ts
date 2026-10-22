@@ -41,9 +41,17 @@ describe('cor de fundo do tema', () => {
     expect(vite).toContain(`theme_color: '${THEME_BACKGROUND.light}'`);
   });
 
-  it('a barra inferior do app e as telas de cronômetro usam o mesmo fundo (gray-50 / gray-950)', () => {
+  it('a barra inferior do app e a tela cheia do sprint usam o mesmo fundo (gray-50 / gray-950)', () => {
     expect(read('App.tsx')).toMatch(/<nav className="md:hidden[^"]*bg-gray-50 dark:bg-gray-950/);
-    expect(read('components/BlockTimerView.tsx')).toContain('bg-gray-50 dark:bg-gray-950');
-    expect(read('components/BreakTimerView.tsx')).toContain('bg-gray-50 dark:bg-gray-950');
+    // O fundo opaco do sprint é do runner (dono da tela cheia); bloco e pausa são só o conteúdo.
+    expect(read('components/SprintRunnerView.tsx')).toMatch(/data-testid="sprint-runner" className="[^"]*bg-gray-50 dark:bg-gray-950/);
+  });
+
+  it('bloco e pausa não criam tela cheia própria (senão a troca de etapa deixa a tela inicial à mostra)', () => {
+    for (const file of ['components/BlockTimerView.tsx', 'components/BreakTimerView.tsx']) {
+      const src = read(file);
+      expect(src, file).not.toContain('createPortal');
+      expect(src, file).not.toMatch(/fixed inset-0/);
+    }
   });
 });
