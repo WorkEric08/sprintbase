@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppData } from '../contexts/AppDataContext';
 import { isDevModeUser } from '../utils/devMode';
+import PWACard from './PWACard';
 
 const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
 
@@ -57,8 +58,10 @@ const SettingsPanel: React.FC = () => {
         </div>
       </div>
 
+      <PWACard />
+
       <div className="pt-4 border-t border-gray-100 dark:border-gray-800 text-center space-y-1">
-        <p className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-widest">Sprint Base · v0.1.0</p>
+        <p className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-widest">Sprint Base · v{__APP_VERSION__}</p>
         {isDevModeUser(userName) && (
           <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Modo desenvolvedor ativo</p>
         )}

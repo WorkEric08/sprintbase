@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Testes ponta a ponta (capturas de tela das falhas)
+scripts/e2e/.artifacts/
+
+# Assinatura do APK: nunca versionar
+*.keystore
+*.jks
+keystore.properties
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

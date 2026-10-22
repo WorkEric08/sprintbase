@@ -4,6 +4,11 @@ import '@fortawesome/fontawesome-free/css/all.min.css'; // ícones empacotados (
 import './index.css';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
+import { initNative } from './utils/native';
+import { initPWA } from './services/pwa';
+
+initNative();
+initPWA();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Elemento #root não encontrado');

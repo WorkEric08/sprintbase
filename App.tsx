@@ -3,6 +3,7 @@ import { AppDataProvider, useAppData } from './contexts/AppDataContext';
 import CicloView from './components/CicloView';
 import ProgressView from './components/ProgressView';
 import SettingsPanel from './components/SettingsPanel';
+import { hideSplash } from './utils/native';
 
 /**
  * Para adicionar um módulo novo (Simulado, Redação...), basta incluir uma entrada aqui:
@@ -37,6 +38,11 @@ const Shell: React.FC = () => {
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0 });
   }, [activeTab]);
+
+  // A splash nativa fica até os dados carregarem (no navegador não faz nada).
+  useEffect(() => {
+    if (!loading) hideSplash();
+  }, [loading]);
 
   if (loading) return <Spinner />;
 

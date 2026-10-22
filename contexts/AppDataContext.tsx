@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { db } from '../db';
 import { BlockLog, BlockType, PostBlockData, Subject, SubjectInput } from '../types';
 import { uid } from '../utils/id';
+import { syncSystemBars } from '../utils/native';
 
 export type Theme = 'light' | 'dark';
 
@@ -96,6 +97,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document.querySelector('meta[name="theme-color"]')
       ?.setAttribute('content', theme === 'dark' ? '#030712' : '#f9fafb');
+    syncSystemBars(theme);
   }, [theme]);
 
   // ── Matérias ────────────────────────────────────────────────────────────

@@ -1,16 +1,22 @@
 import { useEffect, useRef } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { isNative } from '../utils/platform';
 
 /**
  * Faz o botão voltar do aparelho/navegador fechar telas e modais em vez de sair do app.
  *
- * Cada tela ativa registra um handler numa pilha e "reserva" uma entrada no histórico
- * (`pushState`). Voltar consome a entrada do topo e chama o handler dele.
+ * Cada tela ativa registra um handler numa pilha; voltar chama o handler do topo.
  *
- * Em vez de empurrar/remover entradas direto nos efeitos, o hook só mantém a pilha e
- * agenda uma *reconciliação*: compara quantas entradas existem no histórico (`pushed`)
- * com quantas telas estão ativas (`stack.length`) e corrige a diferença. Assim,
- * sequências como montar → desmontar → montar (React StrictMode) ou fechar uma tela e
- * abrir outra no mesmo instante não deixam entradas sobrando nem voltam além do app.
+ * **Web / PWA:** cada tela também "reserva" uma entrada no histórico (`pushState`), e o
+ * `popstate` consome a entrada do topo. Em vez de empurrar/remover entradas direto nos
+ * efeitos, o hook só mantém a pilha e agenda uma *reconciliação*: compara quantas
+ * entradas existem no histórico (`pushed`) com quantas telas estão ativas
+ * (`stack.length`) e corrige a diferença. Assim, sequências como montar → desmontar →
+ * montar (React StrictMode) ou fechar uma tela e abrir outra no mesmo instante não deixam
+ * entradas sobrando nem voltam além do app.
+ *
+ * **APK:** não usa o histórico. O evento `backButton` do Capacitor chama o handler do
+ * topo da pilha; sem nenhuma tela aberta, o app é fechado.
  */
 
 interface Entry {
@@ -25,6 +31,7 @@ let initialized = false;
 
 function reconcile() {
   scheduled = false;
+  if (isNative) return; // no APK a pilha não depende do histórico do WebView
   const desired = stack.length;
   while (pushed < desired) {
     history.pushState({ __nav: true }, '');
@@ -47,6 +54,16 @@ function scheduleReconcile() {
 function init() {
   if (initialized) return;
   initialized = true;
+
+  if (isNative) {
+    CapacitorApp.addListener('backButton', () => {
+      const top = stack[stack.length - 1];
+      if (top) top.handler();
+      else CapacitorApp.exitApp();
+    }).catch(e => console.error('Falha ao registrar o botão voltar', e));
+    return;
+  }
+
   window.addEventListener('popstate', () => {
     if (ignorePops > 0) {
       ignorePops--;
@@ -60,6 +77,10 @@ function init() {
     scheduleReconcile();
   });
 }
+
+// No APK o listener precisa existir desde o início: sem ele, "voltar" na aba Ciclo
+// (nenhuma tela aberta) cairia no comportamento padrão do WebView em vez de fechar o app.
+if (isNative) init();
 
 /**
  * Intercepta o botão voltar enquanto `active` for true.
