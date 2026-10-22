@@ -8,6 +8,7 @@ import { formatClock } from '../utils/format';
 import TimerRing from './TimerRing';
 import PostBlockModal from './PostBlockModal';
 import ConfirmDialog from './ConfirmDialog';
+import Icon from './Icon';
 
 interface Props {
   subject: Subject;
@@ -109,7 +110,7 @@ const BlockTimerView: React.FC<Props> = ({
         <TimerRing fraction={fraction} color={color}>
           {finished ? (
             <div className="flex flex-col items-center animate-bounce">
-              <i className="fas fa-check-circle text-6xl text-green-500 mb-2" />
+              <Icon name="circle-check" className="text-6xl text-green-500 mb-2" />
               <span className="text-lg font-black text-gray-800 dark:text-white uppercase tracking-tighter">Bloco concluído!</span>
             </div>
           ) : (
@@ -147,7 +148,7 @@ const BlockTimerView: React.FC<Props> = ({
               className="w-full py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 text-white"
               style={{ backgroundColor: color }}
             >
-              <i className={`fas ${isRunning ? 'fa-pause' : 'fa-play'}`} />
+              <Icon name={isRunning ? 'pause' : 'play'} />
               {isRunning ? 'Pausar' : 'Retomar'}
             </button>
             <button
@@ -173,7 +174,7 @@ const BlockTimerView: React.FC<Props> = ({
 
       {showExit && (
         <ConfirmDialog
-          icon="fa-triangle-exclamation"
+          icon="triangle-exclamation"
           title="Encerrar sprint?"
           confirmLabel="Sim, encerrar"
           cancelLabel="Continuar estudando"

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StreakState } from '../types';
 import { bonusLabel, STUDY_DAYS_PER_BONUS, streakLabel, streakSubLabel } from '../utils/streakUtils';
+import Icon from './Icon';
 
 interface Props {
   state: StreakState;
@@ -22,7 +23,7 @@ const StreakWidget: React.FC<Props> = ({ state, compact = false }) => {
         aria-label={hasStreak ? `${streakLabel(state)}` : 'Sem sequência ainda'}
         className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm"
       >
-        <i className={`fas fa-fire text-xs ${hasStreak ? 'text-orange-500' : 'text-gray-300 dark:text-gray-700'}`} />
+        <Icon name="fire" className={`text-xs ${hasStreak ? 'text-orange-500' : 'text-gray-300 dark:text-gray-700'}`} />
         <span className={`text-[11px] font-black ${hasStreak ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-600'}`}>
           {hasStreak ? `${state.currentStreak}d` : '—'}
         </span>
@@ -41,7 +42,7 @@ const StreakWidget: React.FC<Props> = ({ state, compact = false }) => {
     <div className="space-y-2" data-testid="streak-widget">
       {state.bonusUsedRecently && (
         <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-2xl px-4 py-3 animate-fade-in">
-          <i className="fas fa-heart text-amber-500 text-sm shrink-0" />
+          <Icon name="heart" className="text-amber-500 text-sm shrink-0" />
           <p className="text-xs font-bold text-amber-800 dark:text-amber-300 leading-relaxed">
             Tudo bem descansar. Usamos um dia bônus — sua sequência continua.
           </p>
@@ -56,7 +57,7 @@ const StreakWidget: React.FC<Props> = ({ state, compact = false }) => {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${hasStreak ? 'bg-orange-50 dark:bg-orange-900/20' : 'bg-gray-50 dark:bg-gray-800'}`}>
-              <i className={`fas fa-fire text-lg ${hasStreak ? 'text-orange-500' : 'text-gray-300 dark:text-gray-700'}`} />
+              <Icon name="fire" className={`text-lg ${hasStreak ? 'text-orange-500' : 'text-gray-300 dark:text-gray-700'}`} />
             </div>
             <div className="min-w-0">
               <p className={`text-xl font-black leading-none ${hasStreak ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-600'}`}>
@@ -93,7 +94,7 @@ const StreakWidget: React.FC<Props> = ({ state, compact = false }) => {
             </div>
             <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3 border border-amber-100 dark:border-amber-900/20">
               <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 leading-relaxed">
-                <i className="fas fa-circle-info mr-1.5" />
+                <Icon name="circle-info" className="mr-1.5" />
                 {bonusLabel(state.bonusBalance)}. Dias bônus são acumulados a cada {STUDY_DAYS_PER_BONUS} dias de estudo e usados automaticamente quando você precisa descansar.
               </p>
             </div>

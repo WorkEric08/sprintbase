@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BlockLog, PostBlockData, SelfScore } from '../types';
+import Icon from './Icon';
 
 interface Props {
   subjectId: string;
@@ -104,11 +105,11 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
                 <p className="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-2">Resolvidas</p>
                 <div className="flex items-center justify-between gap-2">
                   <button onClick={() => changeTotal(-1)} disabled={questionsTotal === 0} className={STEP_BTN} aria-label="Menos uma resolvida">
-                    <i className="fas fa-minus text-[9px]" />
+                    <Icon name="minus" className="text-[9px]" />
                   </button>
                   <span className="text-2xl font-black text-gray-800 dark:text-white tabular-nums">{questionsTotal}</span>
                   <button onClick={() => changeTotal(1)} className={STEP_BTN} aria-label="Mais uma resolvida">
-                    <i className="fas fa-plus text-[9px]" />
+                    <Icon name="plus" className="text-[9px]" />
                   </button>
                 </div>
               </div>
@@ -117,7 +118,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
                 <p className="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-2">Corretas</p>
                 <div className="flex items-center justify-between gap-2">
                   <button onClick={() => changeCorrect(-1)} disabled={questionsCorrect === 0} className={STEP_BTN} aria-label="Menos uma correta">
-                    <i className="fas fa-minus text-[9px]" />
+                    <Icon name="minus" className="text-[9px]" />
                   </button>
                   <span
                     className="text-2xl font-black tabular-nums"
@@ -126,7 +127,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
                     {questionsCorrect}
                   </span>
                   <button onClick={() => changeCorrect(1)} disabled={questionsCorrect >= questionsTotal} className={STEP_BTN} aria-label="Mais uma correta">
-                    <i className="fas fa-plus text-[9px]" />
+                    <Icon name="plus" className="text-[9px]" />
                   </button>
                 </div>
               </div>
@@ -178,7 +179,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
             className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-white shadow-lg"
             style={{ backgroundColor: subjectColor }}
           >
-            <i className="fas fa-check" />
+            <Icon name="check" />
             Salvar registro
           </button>
         </div>

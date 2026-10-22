@@ -1,5 +1,6 @@
 import React from 'react';
 import { BLOCK_TYPE_COLORS, BlockType, Subject } from '../types';
+import Icon from './Icon';
 
 interface Props {
   subject: Subject;
@@ -22,7 +23,7 @@ const SubjectCard: React.FC<Props> = ({ subject, onReset, onEdit, onDelete }) =>
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div className="defer-offscreen bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
       <div className="h-1 w-full" style={{ backgroundColor: subject.color }} />
 
       <div className="p-4 space-y-3">
@@ -36,13 +37,13 @@ const SubjectCard: React.FC<Props> = ({ subject, onReset, onEdit, onDelete }) =>
           <div className="flex items-center gap-1.5 shrink-0 ml-2">
             <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase">{subject.duration}min</span>
             <button onClick={onReset} title="Resetar blocos" aria-label="Resetar blocos" className={`${ICON_BTN} hover:text-amber-500`}>
-              <i className="fas fa-rotate-left text-[10px]" />
+              <Icon name="rotate-left" className="text-[10px]" />
             </button>
             <button onClick={onEdit} title="Editar" aria-label="Editar matéria" className={`${ICON_BTN} hover:text-indigo-500`}>
-              <i className="fas fa-pencil text-[10px]" />
+              <Icon name="pencil" className="text-[10px]" />
             </button>
             <button onClick={onDelete} title="Excluir" aria-label="Excluir matéria" className={`${ICON_BTN} hover:text-red-500`}>
-              <i className="fas fa-trash text-[10px]" />
+              <Icon name="trash" className="text-[10px]" />
             </button>
           </div>
         </div>

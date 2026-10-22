@@ -6,6 +6,7 @@ import {
 import { saveTextFile } from '../utils/files';
 import { isNative } from '../utils/platform';
 import ConfirmDialog from './ConfirmDialog';
+import Icon from './Icon';
 
 const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
 const BTN = 'flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 disabled:opacity-50';
@@ -76,11 +77,11 @@ const BackupCard: React.FC = () => {
 
       <div className="flex gap-3">
         <button onClick={() => { void handleExport(); }} disabled={busy} className={BTN}>
-          <i className="fas fa-file-export" />
+          <Icon name="file-export" />
           Exportar
         </button>
         <button onClick={() => fileInput.current?.click()} disabled={busy} className={BTN}>
-          <i className="fas fa-file-import" />
+          <Icon name="file-import" />
           Importar
         </button>
       </div>
@@ -97,7 +98,7 @@ const BackupCard: React.FC = () => {
 
       {feedback && (
         <p className={`text-xs font-medium px-1 ${feedback.kind === 'ok' ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`} role="status">
-          <i className={`fas ${feedback.kind === 'ok' ? 'fa-circle-check' : 'fa-circle-exclamation'} mr-1.5`} />
+          <Icon name={feedback.kind === 'ok' ? 'circle-check' : 'circle-exclamation'} className="mr-1.5" />
           {feedback.text}
         </p>
       )}
@@ -105,7 +106,7 @@ const BackupCard: React.FC = () => {
       {pending && (
         <ConfirmDialog
           tone="warning"
-          icon="fa-file-import"
+          icon="file-import"
           title="Substituir seus dados?"
           confirmLabel="Sim, restaurar backup"
           onConfirm={() => { void confirmImport(); }}

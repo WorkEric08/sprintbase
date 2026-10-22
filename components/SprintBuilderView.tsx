@@ -4,6 +4,7 @@ import { BLOCK_TYPES, BLOCK_TYPE_LABELS, BlockType, SprintItem, Subject } from '
 import { useBackButton } from '../hooks/useBackButton';
 import { formatDuration } from '../utils/format';
 import { uid } from '../utils/id';
+import Icon from './Icon';
 
 interface Props {
   subjects: Subject[];
@@ -69,12 +70,12 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
           aria-label="Voltar"
           className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:scale-90 transition-transform shrink-0"
         >
-          <i className="fas fa-arrow-left text-sm" />
+          <Icon name="arrow-left" className="text-sm" />
         </button>
         <h2 className="flex-1 text-base font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">Montar sprint</h2>
         {totalMinutes > 0 && (
           <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-full">
-            <i className="fas fa-clock text-indigo-500 text-[10px]" />
+            <Icon name="clock" className="text-indigo-500 text-[10px]" />
             <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
               {formatDuration(totalMinutes)}
             </span>
@@ -87,7 +88,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
         {queue.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800/60 flex items-center justify-center">
-              <i className="fas fa-list-ul text-gray-300 dark:text-gray-600 text-xl" />
+              <Icon name="list-ul" className="text-gray-300 dark:text-gray-600 text-xl" />
             </div>
             <p className="text-[11px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Sprint vazio</p>
             <p className="text-xs text-gray-400 dark:text-gray-600 max-w-[200px] leading-relaxed">
@@ -104,20 +105,20 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
                   <div key={item.id} className={ROW}>
                     <div className="w-1 shrink-0 bg-gray-200 dark:bg-gray-700" />
                     <div className="flex-1 flex items-center gap-3 px-3 py-2.5">
-                      <i className="fas fa-mug-hot text-gray-400 dark:text-gray-600 text-sm shrink-0" />
+                      <Icon name="mug-hot" className="text-gray-400 dark:text-gray-600 text-sm shrink-0" />
                       <span className="flex-1 text-sm font-black text-gray-500 dark:text-gray-400 uppercase tracking-tight">Pausa</span>
                       <div className="flex items-center gap-2 shrink-0">
                         <button onClick={() => stepBreak(item.id, -1)} disabled={first} className={STEP_BTN} aria-label="Diminuir pausa">
-                          <i className="fas fa-minus text-[8px]" />
+                          <Icon name="minus" className="text-[8px]" />
                         </button>
                         <span className="text-[11px] font-black text-gray-700 dark:text-gray-300 w-12 text-center">{item.duration}min</span>
                         <button onClick={() => stepBreak(item.id, 1)} disabled={last} className={STEP_BTN} aria-label="Aumentar pausa">
-                          <i className="fas fa-plus text-[8px]" />
+                          <Icon name="plus" className="text-[8px]" />
                         </button>
                       </div>
                     </div>
                     <button onClick={() => remove(item.id)} className={REMOVE_BTN} aria-label="Remover pausa">
-                      <i className="fas fa-times text-xs" />
+                      <Icon name="times" className="text-xs" />
                     </button>
                   </div>
                 );
@@ -143,7 +144,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
                     </button>
                   </div>
                   <button onClick={() => remove(item.id)} className={REMOVE_BTN} aria-label="Remover bloco">
-                    <i className="fas fa-times text-xs" />
+                    <Icon name="times" className="text-xs" />
                   </button>
                 </div>
               );
@@ -183,7 +184,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
             onClick={addBreak}
             className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 active:scale-95 transition-transform shrink-0"
           >
-            <i className="fas fa-mug-hot text-gray-400 text-[10px]" />
+            <Icon name="mug-hot" className="text-gray-400 text-[10px]" />
             <span className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tight">Pausa</span>
           </button>
         </div>
@@ -198,7 +199,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
                 : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-[0.98]'
             }`}
           >
-            <i className="fas fa-play" />
+            <Icon name="play" />
             {studyCount === 0
               ? 'Adicione blocos para iniciar'
               : `Iniciar · ${studyCount} ${studyCount === 1 ? 'bloco' : 'blocos'} · ${formatDuration(totalMinutes)}`}

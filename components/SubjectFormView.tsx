@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { HexColorPicker } from 'react-colorful';
 import { Subject, SubjectInput } from '../types';
 import { useBackButton } from '../hooks/useBackButton';
+import Icon from './Icon';
 
 interface Props {
   /** Se informado, o formulário edita essa matéria; senão cria uma nova. */
@@ -40,7 +41,7 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
           aria-label="Voltar"
           className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:scale-90 transition-transform"
         >
-          <i className="fas fa-arrow-left text-sm" />
+          <Icon name="arrow-left" className="text-sm" />
         </button>
         <h2 className="text-base font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">
           {subject ? 'Editar matéria' : 'Nova matéria'}
@@ -119,7 +120,7 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
                   customColor ? 'bg-gray-100 dark:bg-gray-800' : ''
                 }`}
               >
-                <i className="fas fa-palette text-xs" />
+                <Icon name="palette" className="text-xs" />
               </button>
             </div>
             {customColor && (

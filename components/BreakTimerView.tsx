@@ -4,6 +4,7 @@ import { useBackButton } from '../hooks/useBackButton';
 import { useCountdown } from '../hooks/useCountdown';
 import { formatClock } from '../utils/format';
 import TimerRing from './TimerRing';
+import Icon from './Icon';
 
 interface Props {
   duration: number; // minutos
@@ -37,7 +38,7 @@ const BreakTimerView: React.FC<Props> = ({ duration, nextSubject, breakIndex, to
     >
       <div className="w-full flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <i className="fas fa-mug-hot text-gray-400 dark:text-gray-600 text-sm" />
+          <Icon name="mug-hot" className="text-gray-400 dark:text-gray-600 text-sm" />
           <span className="text-sm font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Pausa</span>
         </div>
         {totalBreaks > 1 && (

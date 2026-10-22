@@ -4,14 +4,18 @@ import { BlockLog, BlockType, PostBlockData, Subject, SubjectInput } from '../ty
 import { uid } from '../utils/id';
 import { syncSystemBars } from '../utils/native';
 import { SETTING_KEYS } from '../utils/settings';
+import { mark } from '../utils/perf';
 import { THEME_BACKGROUND } from '../utils/theme';
 
 export type Theme = 'light' | 'dark';
 
 interface AppData {
+  /** Matérias e configurações ainda carregando (é o que segura a tela de abertura). */
   loading: boolean;
   subjects: Subject[];
+  /** Os registros de bloco chegam logo DEPOIS da primeira pintura; até lá `blockLogs` está vazio. */
   blockLogs: BlockLog[];
+  logsLoaded: boolean;
   userName: string;
   theme: Theme;
   /** Todas as configurações (tabela `settings`, chave → texto). Valores estruturados vão como JSON. */
@@ -70,6 +74,62 @@ function mirrorTheme(theme: Theme) {
   try { localStorage.setItem('sprint_theme', theme); } catch { /* ignorado */ }
 }
 
+interface CriticalData {
+  subjects: Subject[];
+  settings: Record<string, string>;
+}
+
+let criticalLoad: Promise<CriticalData> | null = null;
+/** Preenchido assim que a leitura termina: permite desenhar o primeiro quadro JÁ com os dados, sem passar pelo "carregando". */
+let criticalResult: CriticalData | null = null;
+let logsLoad: Promise<BlockLog[]> | null = null;
+
+/**
+ * O que o Ciclo precisa para desenhar a primeira tela: matérias e configurações (poucas dezenas de linhas).
+ * Roda uma única vez e é reaproveitado por quem pedir de novo (por exemplo, o React.StrictMode em dev).
+ */
+function loadCritical(): Promise<CriticalData> {
+  criticalLoad ??= (async () => {
+    mark('data-start');
+    const [subjectRows, settingRows] = await Promise.all([db.subjects.toArray(), db.settings.toArray()]);
+    const settings: Record<string, string> = Object.fromEntries(settingRows.map(r => [r.key, r.value]));
+    migrateLegacyLocalStorage(settings);
+    // Ordem de criação; matérias antigas (sem createdAt) mantêm a ordem do banco.
+    criticalResult = { subjects: [...subjectRows].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0)), settings };
+    mark('data-loaded');
+    return criticalResult;
+  })();
+  return criticalLoad;
+}
+
+/**
+ * Espera (no máximo `maxWaitMs`) a leitura das matérias e configurações. O index.tsx só monta o React depois disto:
+ * assim o primeiro quadro já sai com o Ciclo pronto. Se o banco demorar ou falhar, o app abre mesmo assim,
+ * pelo caminho normal (carregando → dados).
+ */
+export function whenFirstDataReady(maxWaitMs: number): Promise<void> {
+  return Promise.race([
+    loadCritical().then(() => undefined, () => undefined),
+    new Promise<void>(resolve => setTimeout(resolve, maxWaitMs)),
+  ]);
+}
+
+/** Todos os registros de bloco: podem ser milhares e a primeira tela não precisa deles, então vêm depois. */
+function loadLogs(): Promise<BlockLog[]> {
+  logsLoad ??= db.blockLogs.orderBy('timestamp').reverse().toArray();
+  return logsLoad;
+}
+
+// Começa a ler o banco já ao carregar este módulo, em paralelo com o resto da inicialização do app
+// (montagem do React, desenho do Ciclo), em vez de esperar o primeiro efeito. Erros são tratados no Provider.
+void loadCritical().catch(() => undefined);
+
+/** Resolve logo depois de o navegador pintar o quadro atual (ou em 300 ms, se ele nunca pintar, como em segundo plano). */
+const afterNextPaint = () => new Promise<void>(resolve => {
+  const timer = setTimeout(resolve, 300);
+  requestAnimationFrame(() => setTimeout(() => { clearTimeout(timer); resolve(); }, 0));
+});
+
 /**
  * Fonte única de dados do app. Toda tela lê e grava por aqui — não há hooks de dados
  * duplicados, então Ciclo, Sprint e Progresso sempre veem o mesmo estado.
@@ -79,17 +139,20 @@ function mirrorTheme(theme: Theme) {
  * capturam closures antigas) nunca operem sobre dados defasados.
  */
 export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [loading, setLoading] = useState(true);
-  const [subjects, setSubjectsState] = useState<Subject[]>([]);
+  // Se a leitura inicial já terminou (ver whenFirstDataReady), nasce com os dados e sem tela de "carregando".
+  const seeded = useRef(criticalResult).current;
+  const [loading, setLoading] = useState(seeded === null);
+  const [subjects, setSubjectsState] = useState<Subject[]>(seeded?.subjects ?? []);
   const [blockLogs, setBlockLogsState] = useState<BlockLog[]>([]);
-  const [settings, setSettingsState] = useState<Record<string, string>>({});
+  const [logsLoaded, setLogsLoaded] = useState(false);
+  const [settings, setSettingsState] = useState<Record<string, string>>(seeded?.settings ?? {});
   // Tema inicial = o que o script do index.html já aplicou (evita flash até o banco carregar).
   const initialTheme = useRef<Theme>(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 
   const userName = settings.user_name ?? '';
   const theme: Theme = settings.theme === 'light' || settings.theme === 'dark' ? settings.theme : initialTheme.current;
 
-  const subjectsRef = useRef<Subject[]>([]);
+  const subjectsRef = useRef<Subject[]>(seeded?.subjects ?? []);
   const blockLogsRef = useRef<BlockLog[]>([]);
 
   const commitSubjects = useCallback((next: Subject[]) => {
@@ -107,28 +170,37 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     let cancelled = false;
     (async () => {
       try {
-        const [subjectRows, logRows, settingRows] = await Promise.all([
-          db.subjects.toArray(),
-          db.blockLogs.orderBy('timestamp').reverse().toArray(),
-          db.settings.toArray(),
-        ]);
+        const data = await loadCritical();
         if (cancelled) return;
-        // Ordem de criação; matérias antigas (sem createdAt) mantêm a ordem do banco.
-        commitSubjects([...subjectRows].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0)));
-        commitBlockLogs(logRows);
-        const loaded: Record<string, string> = Object.fromEntries(settingRows.map(r => [r.key, r.value]));
-        migrateLegacyLocalStorage(loaded);
-        setSettingsState(loaded);
+        if (!seeded) { // senão o estado já nasceu com estes dados: reaplicá-los só causaria outra renderização
+          commitSubjects(data.subjects);
+          setSettingsState(data.settings);
+        }
         // Reaplica o espelho do tema (some após reinstalar/restaurar backup) para o próximo boot não piscar.
-        if (loaded.theme === 'light' || loaded.theme === 'dark') mirrorTheme(loaded.theme);
+        if (data.settings.theme === 'light' || data.settings.theme === 'dark') mirrorTheme(data.settings.theme);
       } catch (e) {
         logError('carregar dados', e);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !seeded) setLoading(false); // libera a tela de abertura: o Ciclo já pode ser desenhado
+      }
+
+      // Só depois da primeira pintura: os registros de bloco (ofensiva, calendário, acerto).
+      try {
+        await afterNextPaint();
+        const rows = await loadLogs();
+        if (cancelled) return;
+        // Um registro gravado enquanto a leitura rodava já está em memória: mantém-no junto com os lidos.
+        const loadedIds = new Set(rows.map(r => r.id));
+        commitBlockLogs([...blockLogsRef.current.filter(l => !loadedIds.has(l.id)), ...rows]);
+        mark('logs-loaded');
+      } catch (e) {
+        logError('carregar registros de bloco', e);
+      } finally {
+        if (!cancelled) setLogsLoaded(true);
       }
     })();
     return () => { cancelled = true; };
-  }, [commitSubjects, commitBlockLogs]);
+  }, [commitSubjects, commitBlockLogs, seeded]);
 
   // ── Tema ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -225,11 +297,11 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [setSetting]);
 
   const value = useMemo<AppData>(() => ({
-    loading, subjects, blockLogs, userName, theme, settings,
+    loading, subjects, blockLogs, logsLoaded, userName, theme, settings,
     addSubject, updateSubject, deleteSubject, resetSubjectBlocks,
     completeBlock, saveBlockLog, setUserName, setTheme, setSetting, removeSetting,
   }), [
-    loading, subjects, blockLogs, userName, theme, settings,
+    loading, subjects, blockLogs, logsLoaded, userName, theme, settings,
     addSubject, updateSubject, deleteSubject, resetSubjectBlocks,
     completeBlock, saveBlockLog, setUserName, setTheme, setSetting, removeSetting,
   ]);

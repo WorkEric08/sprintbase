@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ícones SVG (components/Icon.tsx): 1em de altura, largura pela proporção do desenho, alinhados ao texto
+   como o Font Awesome fazia. Na camada "components" para que classes como `w-5` e `animate-spin` vençam. */
+@layer components {
+  /* Itens de lista longa: o navegador só calcula layout e pintura do que está (ou vai estar) na tela. Na abertura,
+     os cartões abaixo da dobra não custam nada. O tamanho aproximado evita que a barra de rolagem "pule". */
+  .defer-offscreen {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 230px;
+  }
+
+  .sprint-icon {
+    display: inline-block;
+    flex-shrink: 0;
+    height: 1em;
+    width: calc(1em * var(--icon-aspect, 1));
+    overflow: visible;
+    vertical-align: -0.125em;
+  }
+}
+
 :root {
   --app-height: 100vh;
 }

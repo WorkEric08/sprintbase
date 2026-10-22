@@ -72,13 +72,13 @@ O método gira em torno de três ideias:
 
 | Área | Tecnologia |
 |---|---|
-| Interface | [React 19](https://react.dev/) |
+| Interface | [React 19](https://react.dev/) no desenvolvimento e [Preact](https://preactjs.com/) (mesma API, bem menor) no aplicativo e na versão web publicados |
 | Linguagem | [TypeScript](https://www.typescriptlang.org/) |
 | Build e servidor de desenvolvimento | [Vite](https://vitejs.dev/) |
 | Estilos | [Tailwind CSS](https://tailwindcss.com/) |
 | Armazenamento local | [Dexie](https://dexie.org/) (IndexedDB) |
 | Seletor de cores | [react-colorful](https://github.com/omgovich/react-colorful) |
-| Ícones | [Font Awesome](https://fontawesome.com/) (empacotado, funciona offline) |
+| Ícones | [Font Awesome](https://fontawesome.com/), só os ícones usados, como SVG embutido (sem fonte; funciona offline) |
 | Aplicativo Android | [Capacitor](https://capacitorjs.com/) |
 | Versão web instalável (PWA) | [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) |
 | Testes | [Vitest](https://vitest.dev/) (unitários) e [Puppeteer](https://pptr.dev/) (ponta a ponta, na web e no app) |
@@ -111,6 +111,7 @@ O app abre em [http://localhost:3001](http://localhost:3001). Como o servidor es
 | `npm run lint` | Verifica os tipos com o TypeScript (`tsc --noEmit`) |
 | `npm test` | Roda os testes unitários |
 | `npm run e2e` | Teste ponta a ponta no navegador (veja abaixo para o aplicativo no celular) |
+| `npm run perf` | Mede a inicialização do app (tempo até a tela inicial pronta) e compara com medições salvas |
 
 ### Gerar o APK
 
@@ -127,6 +128,18 @@ Além do Node.js, é preciso o **JDK 21** e o **Android SDK** (plataforma 36). O
 O APK de release é assinado com uma chave que fica **fora do repositório**, em `~/.sprint-signing` (veja o `LEIA-ME.txt` que ela contém). Quem clonar o projeto e não tiver essa chave consegue gerar o APK de debug normalmente, mas não o de release.
 
 Para abrir no Android Studio, abra a pasta `android/` e rode `npm run android:sync` antes de cada build, para o aplicativo empacotar a versão mais recente do código.
+
+## Desempenho
+
+O app abre direto na tela inicial, com os dados já desenhados. O que foi feito para isso (medido com `npm run perf`, que simula um celular com CPU 4× mais lenta e 1.500 registros no banco):
+
+- **Ícones em SVG embutido**, só os 38 usados, no lugar da fonte do Font Awesome (155 KB de fonte e 100 KB de CSS que precisavam ser lidos antes de qualquer ícone aparecer).
+- **Leitura do banco antecipada**: começa quando o código é carregado, em paralelo com a montagem da interface, e o primeiro quadro já sai com as matérias desenhadas. Os registros de bloco (podem ser milhares) chegam logo depois da primeira pintura.
+- **Só o Ciclo no primeiro arquivo**: Progresso, Ajustes, Montar sprint, cronômetro e seletor de cores são carregados em segundo plano depois da primeira pintura, então abrem sem demora.
+- **Preact** no lugar do React nos builds: metade do JavaScript para o aparelho ler e compilar.
+- **Cartões fora da tela sem custo de layout** na abertura, e o WebView do Android sem a verificação de sites (o app só abre arquivos locais).
+
+Resultado na medição: tela inicial pronta em **476 ms → 280 ms** (−41%) e JavaScript inicial de **131 KB → 62 KB**. Esses valores são do Chrome no PC, úteis para comparar versões entre si; no celular o tempo absoluto é outro. O teste ponta a ponta (`npm run e2e -- --preview`) falha se o primeiro arquivo passar do orçamento de tamanho.
 
 ## Estrutura do projeto
 

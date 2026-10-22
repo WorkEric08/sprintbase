@@ -355,6 +355,25 @@ async function main() {
     });
   }
 
+  if (PREVIEW) {
+    group('Inicialização enxuta (orçamento)');
+    await check('o primeiro arquivo do app é pequeno e não usa fonte de ícones', async () => {
+      const r = await page.evaluate(() => {
+        const readyAt = performance.getEntriesByName('sprint:ready')[0]?.startTime ?? Infinity;
+        const early = performance.getEntriesByType('resource').filter(e => e.responseEnd <= readyAt);
+        const sum = re => early.filter(e => re.test(e.name)).reduce((a, e) => a + e.encodedBodySize, 0) / 1024;
+        return { js: sum(/[.]js([?]|$)/), css: sum(/[.]css([?]|$)/), font: sum(/[.](woff2?|ttf|otf)([?]|$)/) };
+      });
+      assert(r.js <= 90, `JS carregado antes da primeira pintura: ${r.js.toFixed(0)} KB (orçamento: 90 KB comprimidos). Algo grande entrou no primeiro arquivo?`);
+      assert(r.css <= 15, `CSS: ${r.css.toFixed(0)} KB (orçamento: 15 KB)`);
+      assert(r.font === 0, `${r.font.toFixed(0)} KB de fontes carregadas na inicialização (os ícones são SVG)`);
+    });
+    await check('telas pesadas ficam fora do primeiro arquivo e chegam pré-carregadas', async () => {
+      // Depois da inicialização, o navegador ocioso baixa as outras telas: abrir Ajustes não pode precisar esperar.
+      await waitFor(() => page.evaluate(() => performance.getEntriesByType('resource').filter(e => /[.]js([?]|$)/.test(e.name)).length >= 4), 'telas carregadas em segundo plano', 6000);
+    });
+  }
+
   // ── Ciclo ──
   group('Ciclo (matérias)');
   await check('cria uma matéria pelo formulário', async () => {
@@ -371,6 +390,25 @@ async function main() {
     await typeInto('Ex.: Matemática', 'Português 2');
     await click('Salvar alterações');
     await waitText('português 2');
+  });
+  await check('seletor de cores personalizado responde ao toque (react-colorful)', async () => {
+    await click('Nova matéria', { exact: true });
+    await waitFor(async () => (await bodyText()).includes('duração do bloco'), 'abrir formulário');
+    await click('Escolher outra cor');
+    const box = await waitFor(() => page.evaluate(() => {
+      const el = document.querySelector('.react-colorful__saturation');
+      if (!el) return null;
+      el.scrollIntoView({ block: 'center' });
+      const r = el.getBoundingClientRect();
+      return { x: r.left, y: r.top, w: r.width, h: r.height };
+    }), 'área de saturação do seletor');
+    const hexOf = () => page.evaluate(() => [...document.querySelectorAll('span')].map(s => s.textContent.trim()).find(t => /^#[0-9A-Fa-f]{6}$/.test(t)) ?? '');
+    const before = await hexOf();
+    assert(/^#[0-9A-Fa-f]{6}$/.test(before), `cor inicial não lida (${before})`);
+    await page.mouse.click(box.x + box.w * 0.2, box.y + box.h * 0.75); // canto escuro e pouco saturado: bem diferente do índigo inicial
+    await waitFor(async () => (await hexOf()) !== before, 'a cor mudar depois do toque no seletor');
+    await target.pressBack();
+    await waitGone('duração do bloco');
   });
   await check('botão voltar do aparelho fecha o formulário sem sair do app', async () => {
     await click('Nova matéria', { exact: true });
@@ -641,7 +679,8 @@ async function main() {
     await client.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dlDir }).catch(async () => {
       await client.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: dlDir });
     });
-    const upload = async file => (await page.$('input[type="file"]')).uploadFile(file);
+    // Ajustes é uma tela carregada sob demanda: espera o campo existir em vez de supor que já está lá.
+    const upload = async file => (await waitFor(() => page.$('input[type="file"]'), 'campo de arquivo do backup')).uploadFile(file);
     let backupFile;
 
     await check('exporta um arquivo .json com todos os dados', async () => {

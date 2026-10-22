@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useBackButton } from '../hooks/useBackButton';
 import { GoalLevel, GoalSettings, MAX_GOAL_LIMIT, MIN_GOAL_LIMIT, levelColor } from '../utils/calendar';
+import Icon from './Icon';
 
 interface Props {
   current: GoalSettings;
@@ -44,7 +45,7 @@ const CalendarGoalModal: React.FC<Props> = ({ current, onSave, onClose }) => {
             <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mt-0.5">Define as cores do calendário</p>
           </div>
           <button onClick={onClose} aria-label="Fechar" className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 active:scale-90 transition-transform">
-            <i className="fas fa-times text-[11px]" />
+            <Icon name="times" className="text-[11px]" />
           </button>
         </div>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useBackButton } from '../hooks/useBackButton';
+import Icon from './Icon';
 
 interface Props {
   userName: string;
@@ -28,7 +29,7 @@ const WelcomeBackCard: React.FC<Props> = ({ userName, daysAbsent, longestStreak,
         className="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 p-6 space-y-4 mb-2 animate-slide-up"
       >
         <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto">
-          <i className="fas fa-face-smile text-indigo-500 text-2xl" />
+          <Icon name="face-smile" className="text-indigo-500 text-2xl" />
         </div>
 
         <div className="text-center space-y-2">

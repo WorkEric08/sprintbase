@@ -8,6 +8,7 @@ import {
 import { isDevModeUser } from '../utils/devMode';
 import { SETTING_KEYS, isStringRecord, parseJsonSetting } from '../utils/settings';
 import CalendarGoalModal from './CalendarGoalModal';
+import Icon from './Icon';
 
 const DAY_LABELS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 const NOTE_MAX = 500;
@@ -120,7 +121,7 @@ const HeatmapView: React.FC = () => {
             aria-label="Meta de blocos do calendário"
             className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-600 hover:text-violet-500 active:scale-90 transition-all"
           >
-            <i className="fas fa-gear text-[10px]" />
+            <Icon name="gear" className="text-[10px]" />
           </button>
         </div>
 
@@ -128,7 +129,7 @@ const HeatmapView: React.FC = () => {
           <div className="mx-4 mb-3 rounded-xl border border-dashed border-amber-300 dark:border-amber-700/70 bg-amber-50/60 dark:bg-amber-900/10 p-3 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                <i className="fas fa-flask text-[10px]" /> Simulação (dev)
+                <Icon name="flask" className="text-[10px]" /> Simulação (dev)
               </span>
               <button
                 onClick={() => setSimEnabled(v => !v)}
@@ -278,7 +279,7 @@ const HeatmapView: React.FC = () => {
                   aria-label="Fechar detalhe do dia"
                   className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-600 active:scale-90 transition-all shrink-0 ml-3"
                 >
-                  <i className="fas fa-times text-[10px]" />
+                  <Icon name="times" className="text-[10px]" />
                 </button>
               </div>
 
@@ -379,7 +380,7 @@ const HeatmapView: React.FC = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 py-1 text-gray-300 dark:text-gray-700 hover:text-violet-400 transition-colors">
-                        <i className="fas fa-pen text-[9px]" />
+                        <Icon name="pen" className="text-[9px]" />
                         <span className="text-[11px] font-bold uppercase tracking-widest">Adicionar anotação</span>
                       </div>
                     )}

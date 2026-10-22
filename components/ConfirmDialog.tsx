@@ -1,12 +1,13 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useBackButton } from '../hooks/useBackButton';
+import Icon, { IconName } from './Icon';
 
 type Tone = 'danger' | 'warning';
 
 interface Props {
   tone?: Tone;
-  icon: string; // classe Font Awesome sem o "fas " (ex.: "fa-trash")
+  icon: IconName;
   title: string;
   children: React.ReactNode;
   confirmLabel: string;
@@ -39,7 +40,7 @@ const ConfirmDialog: React.FC<Props> = ({
     <div className="fixed inset-0 z-[70] bg-white/80 dark:bg-gray-950/80 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
       <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl p-8 shadow-2xl border border-gray-100 dark:border-gray-800 text-center space-y-6 animate-pop-in">
         <div className={`w-16 h-16 ${t.iconWrap} rounded-full flex items-center justify-center mx-auto`}>
-          <i className={`fas ${icon} text-2xl ${t.iconText}`} />
+          <Icon name={icon} className={`text-2xl ${t.iconText}`} />
         </div>
         <div className="space-y-2">
           <h3 className="text-lg font-black text-gray-800 dark:text-white uppercase tracking-tight">{title}</h3>

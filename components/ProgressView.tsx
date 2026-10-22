@@ -5,6 +5,7 @@ import { useStreak } from '../hooks/useStreak';
 import { Period, formatMinutes, getPeriodStart } from '../utils/format';
 import HeatmapView from './HeatmapView';
 import StreakWidget from './StreakWidget';
+import Icon from './Icon';
 
 const PERIODS: { id: Period; label: string }[] = [
   { id: 'day', label: 'Dia' },
@@ -125,7 +126,7 @@ const ProgressView: React.FC = () => {
       <div className="grid grid-cols-3 gap-3">
         <div className={`${CARD} p-4`}>
           <div className="flex items-center gap-1.5 mb-3">
-            <i className="fas fa-hourglass-half text-indigo-500 text-[10px]" />
+            <Icon name="hourglass-half" className="text-indigo-500 text-[10px]" />
             <span className={CAPTION}>Tempo</span>
           </div>
           <p className="text-xl sm:text-2xl font-black text-gray-800 dark:text-white leading-none">{formatMinutes(metrics.minutes)}</p>
@@ -133,7 +134,7 @@ const ProgressView: React.FC = () => {
 
         <div className={`${CARD} p-4`}>
           <div className="flex items-center gap-1.5 mb-3">
-            <i className="fas fa-bolt text-indigo-500 text-[10px]" />
+            <Icon name="bolt" className="text-indigo-500 text-[10px]" />
             <span className={CAPTION}>Blocos</span>
           </div>
           <p className="text-xl sm:text-2xl font-black text-gray-800 dark:text-white leading-none">
@@ -143,7 +144,7 @@ const ProgressView: React.FC = () => {
 
         <div className={`${CARD} p-4`}>
           <div className="flex items-center gap-1.5 mb-3">
-            <i className="fas fa-bullseye text-indigo-500 text-[10px]" />
+            <Icon name="bullseye" className="text-indigo-500 text-[10px]" />
             <span className={CAPTION}>Acerto</span>
           </div>
           <p className="text-xl sm:text-2xl font-black leading-none" style={{ color: accuracyColor(metrics.accuracy) }}>

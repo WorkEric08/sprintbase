@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { SprintItem, Subject } from '../types';
 import { useAppData } from '../contexts/AppDataContext';
 import { useStreak } from '../hooks/useStreak';
 import StreakWidget from './StreakWidget';
 import SubjectCard from './SubjectCard';
-import SubjectFormView from './SubjectFormView';
-import SprintBuilderView from './SprintBuilderView';
-import SprintRunnerView from './SprintRunnerView';
+import { OverlayFallback, SprintBuilderView, SprintRunnerView, SubjectFormView } from './screens';
 import ConfirmDialog from './ConfirmDialog';
+import Icon from './Icon';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -20,7 +19,7 @@ function getGreeting(): string {
 /** Aba principal: matérias, progresso por matéria e entrada para o Montar Sprint. */
 const CicloView: React.FC = () => {
   const { subjects, userName, addSubject, updateSubject, deleteSubject, resetSubjectBlocks } = useAppData();
-  const { streak, enabled: streakEnabled } = useStreak();
+  const { streak, enabled: streakEnabled, ready: streakReady } = useStreak();
 
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Subject | null>(null);
@@ -39,13 +38,13 @@ const CicloView: React.FC = () => {
           </h2>
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-3">
-          {streakEnabled && <StreakWidget state={streak} compact />}
+          {streakEnabled && streakReady && <StreakWidget state={streak} compact />}
           <button
             onClick={() => setAdding(true)}
             aria-label="Nova matéria"
             className="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-colors active:scale-90 shrink-0"
           >
-            <i className="fas fa-plus" />
+            <Icon name="plus" />
           </button>
         </div>
       </div>
@@ -53,7 +52,7 @@ const CicloView: React.FC = () => {
       {subjects.length === 0 ? (
         <div className="text-center py-16 px-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm md:max-w-lg md:mx-auto">
           <div className="bg-indigo-50 dark:bg-indigo-900/30 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i className="fas fa-book-open text-indigo-400 text-3xl" />
+            <Icon name="book-open" className="text-indigo-400 text-3xl" />
           </div>
           <h3 className="text-gray-700 dark:text-gray-200 font-medium text-xl">Nenhuma matéria ainda</h3>
           <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
@@ -84,31 +83,35 @@ const CicloView: React.FC = () => {
             onClick={() => setBuilding(true)}
             className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
           >
-            <i className="fas fa-list-ul" />
+            <Icon name="list-ul" />
             Montar sprint
           </button>
         </>
       )}
 
       {adding && (
-        <SubjectFormView
-          onSave={data => { addSubject(data); setAdding(false); }}
-          onClose={() => setAdding(false)}
-        />
+        <Suspense fallback={<OverlayFallback />}>
+          <SubjectFormView
+            onSave={data => { addSubject(data); setAdding(false); }}
+            onClose={() => setAdding(false)}
+          />
+        </Suspense>
       )}
 
       {editing && (
-        <SubjectFormView
-          subject={editing}
-          onSave={data => { updateSubject(editing.id, data); setEditing(null); }}
-          onClose={() => setEditing(null)}
-        />
+        <Suspense fallback={<OverlayFallback />}>
+          <SubjectFormView
+            subject={editing}
+            onSave={data => { updateSubject(editing.id, data); setEditing(null); }}
+            onClose={() => setEditing(null)}
+          />
+        </Suspense>
       )}
 
       {confirmReset && (
         <ConfirmDialog
           tone="warning"
-          icon="fa-rotate-left"
+          icon="rotate-left"
           title="Resetar blocos?"
           confirmLabel="Sim, resetar blocos"
           onConfirm={() => { resetSubjectBlocks(confirmReset.id); setConfirmReset(null); }}
@@ -121,7 +124,7 @@ const CicloView: React.FC = () => {
 
       {confirmDelete && (
         <ConfirmDialog
-          icon="fa-trash"
+          icon="trash"
           title="Excluir matéria?"
           confirmLabel="Sim, excluir matéria"
           onConfirm={() => { deleteSubject(confirmDelete.id); setConfirmDelete(null); }}
@@ -133,14 +136,20 @@ const CicloView: React.FC = () => {
       )}
 
       {building && (
-        <SprintBuilderView
-          subjects={subjects}
-          onStart={items => { setBuilding(false); setSprint(items); }}
-          onClose={() => setBuilding(false)}
-        />
+        <Suspense fallback={<OverlayFallback />}>
+          <SprintBuilderView
+            subjects={subjects}
+            onStart={items => { setBuilding(false); setSprint(items); }}
+            onClose={() => setBuilding(false)}
+          />
+        </Suspense>
       )}
 
-      {sprint && <SprintRunnerView items={sprint} onClose={() => setSprint(null)} />}
+      {sprint && (
+        <Suspense fallback={<OverlayFallback />}>
+          <SprintRunnerView items={sprint} onClose={() => setSprint(null)} />
+        </Suspense>
+      )}
     </div>
   );
 };

@@ -18,7 +18,8 @@
     "icons": "node scripts/generate-icons.mjs && capacitor-assets generate --android",
     "e2e": "node scripts/e2e/run.mjs",
     "android:release": "node scripts/android.mjs release",
-    "android:install-release": "node scripts/android.mjs install-release"
+    "android:install-release": "node scripts/android.mjs install-release",
+    "perf": "node scripts/perf/startup.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",
@@ -26,8 +27,9 @@
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",
-    "@fortawesome/fontawesome-free": "^6.5.1",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "dexie": "^4.4.2",
+    "preact": "^11.0.1",
     "react": "^19.2.4",
     "react-colorful": "^5.6.1",
     "react-dom": "^19.2.4"

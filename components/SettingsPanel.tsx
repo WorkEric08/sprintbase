@@ -4,12 +4,13 @@ import { isDevModeUser } from '../utils/devMode';
 import { SETTING_KEYS, isStreakEnabled } from '../utils/settings';
 import BackupCard from './BackupCard';
 import PWACard from './PWACard';
+import Icon from './Icon';
 
 const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
 
 const THEME_OPTIONS = [
-  { id: 'light', label: 'Claro', icon: 'fa-sun' },
-  { id: 'dark', label: 'Escuro', icon: 'fa-moon' },
+  { id: 'light', label: 'Claro', icon: 'sun' },
+  { id: 'dark', label: 'Escuro', icon: 'moon' },
 ] as const;
 
 const SettingsPanel: React.FC = () => {
@@ -20,7 +21,7 @@ const SettingsPanel: React.FC = () => {
     <div className="max-w-lg mx-auto space-y-7">
       <div className="flex items-center gap-3">
         <div className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-gray-800/60 flex items-center justify-center shrink-0">
-          <i className="fas fa-gear text-gray-600 dark:text-gray-400" />
+          <Icon name="gear" className="text-gray-600 dark:text-gray-400" />
         </div>
         <div>
           <h2 className="text-lg font-black text-gray-800 dark:text-gray-100 tracking-tight">Configurações</h2>
@@ -54,7 +55,7 @@ const SettingsPanel: React.FC = () => {
                   : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500'
               }`}
             >
-              <i className={`fas ${opt.icon}`} />
+              <Icon name={opt.icon} />
               {opt.label}
             </button>
           ))}
