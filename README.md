@@ -4,6 +4,10 @@
 
 Não precisa de conta, de internet nem de servidor: os dados ficam salvos no próprio dispositivo.
 
+## Experimente agora (sem instalar nada)
+
+**[sprintbase-fawn.vercel.app](https://sprintbase-fawn.vercel.app/)** — a versão web funciona em qualquer navegador, no celular ou no computador, e também pode ser instalada como aplicativo pela opção "Adicionar à tela inicial" do navegador. Ela e o aplicativo Android são o mesmo programa, mas guardam os dados separadamente: para levar o histórico de um para o outro, use o backup em **Ajustes → Seus dados**.
+
 ## Baixar o app (Android)
 
 A versão mais recente do aplicativo está na página de **[Releases](https://github.com/WorkEric08/sprintbase/releases/latest)**: baixe o arquivo **`Sprint.apk`** (ou use o [link direto](https://github.com/WorkEric08/sprintbase/releases/latest/download/Sprint.apk)). Funciona em Android 7.0 ou superior.

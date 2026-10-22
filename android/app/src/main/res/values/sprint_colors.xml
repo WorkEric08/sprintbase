@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fundo do app no tema claro (igual a utils/theme.ts e ao gray-50 do Tailwind). -->
+    <color name="sprint_window_background">#f9fafb</color>
+</resources>

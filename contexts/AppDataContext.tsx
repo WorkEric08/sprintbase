@@ -4,6 +4,7 @@ import { BlockLog, BlockType, PostBlockData, Subject, SubjectInput } from '../ty
 import { uid } from '../utils/id';
 import { syncSystemBars } from '../utils/native';
 import { SETTING_KEYS } from '../utils/settings';
+import { THEME_BACKGROUND } from '../utils/theme';
 
 export type Theme = 'light' | 'dark';
 
@@ -133,8 +134,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document.querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', theme === 'dark' ? '#030712' : '#f9fafb');
-    syncSystemBars(theme);
+      ?.setAttribute('content', THEME_BACKGROUND[theme]);
+    void syncSystemBars(theme);
   }, [theme]);
 
   // ── Matérias ────────────────────────────────────────────────────────────

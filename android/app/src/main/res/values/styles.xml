@@ -13,6 +13,8 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Valor que o Capacitor relê ao refazer o fundo atrás das barras; o plugin SystemBarColors o ajusta ao tema do app. -->
+        <item name="android:windowBackground">@color/sprint_window_background</item>
     </style>
 
 

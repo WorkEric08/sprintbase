@@ -32,7 +32,7 @@ const BreakTimerView: React.FC<Props> = ({ duration, nextSubject, breakIndex, to
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[60] bg-white dark:bg-gray-950 flex flex-col items-center justify-between px-8 pb-8 animate-fade-in"
+      className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-between px-8 pb-8 animate-fade-in"
       style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 2rem)' }}
     >
       <div className="w-full flex justify-between items-center">

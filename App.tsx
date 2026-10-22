@@ -125,7 +125,7 @@ const Shell: React.FC = () => {
       )}
 
       {/* Bottom nav (mobile). Telas de sprint/formulários são fixas em z-50+, então cobrem esta barra (z-40). */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 pt-3 safe-bottom flex items-center">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 pt-3 safe-bottom flex items-center">
         {TABS.map(tab => (
           <button
             key={tab.id}
