@@ -1,4 +1,4 @@
-// Gera os ícones a partir do desenho de public/icon.svg (gradiente roxo + raio).
+// Gera os ícones a partir do desenho de public/icon.svg (cronômetro roxo com visto, sobre fundo preto).
 //
 //   node scripts/generate-icons.mjs
 //
@@ -6,7 +6,7 @@
 //   public/icons/*.png         ícones do PWA (192, 512, maskable, apple-touch)
 //   assets/*.png               fontes do @capacitor/assets (ícone adaptativo do Android)
 // Depois, para gerar os recursos do Android:  npx capacitor-assets generate --android
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
@@ -15,42 +15,31 @@ const out = (p) => root + p;
 mkdirSync(out('public/icons'), { recursive: true });
 mkdirSync(out('assets'), { recursive: true });
 
-const BOLT = 'M300 60L140 290H230L200 450L370 190H280L310 60Z'; // mesmo raio do icon.svg (centro ≈ 255,255)
-const GRADIENT = `
-  <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8B5CF6"/>
-      <stop offset="100%" stop-color="#6366F1"/>
-    </linearGradient>
-  </defs>`;
+const ICON = readFileSync(out('public/icon.svg'), 'utf-8'); // 1024 × 1024, fundo preto + logo
+const FUNDO = '<rect width="1024" height="1024" fill="#000"/>';
+if (!ICON.includes(FUNDO)) throw new Error('public/icon.svg mudou: ajuste FUNDO em scripts/generate-icons.mjs');
+const LOGO = ICON.replace(FUNDO, '').replace(/^<svg[^>]*>|<\/svg>\s*$/g, ''); // só o desenho, sem fundo
 
-/** Raio centralizado numa tela `size`, ocupando `scale` vezes o tamanho original (512). */
-const bolt = (size, scale) =>
-  `<path d="${BOLT}" fill="white" transform="translate(${size / 2} ${size / 2}) scale(${scale}) translate(-255 -255)"/>`;
-
-const svg = (size, body) =>
-  Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${body}</svg>`);
+const svg = (body) =>
+  Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">${body}</svg>`);
 
 const png = (buf, file, size) => sharp(buf, { density: 384 }).resize(size, size).png().toFile(out(file));
 
-// Ícone "normal": quadrado arredondado com o raio (igual ao icon.svg).
-const rounded = (size) =>
-  svg(size, `${GRADIENT}<rect width="${size}" height="${size}" rx="${size * 0.234}" fill="url(#g)"/>${bolt(size, size / 512)}`);
-// Ícone de sangria total (sem cantos): a plataforma aplica a máscara. O raio fica na zona segura.
-const fullBleed = (size, scale) => svg(size, `${GRADIENT}<rect width="${size}" height="${size}" fill="url(#g)"/>${bolt(size, scale)}`);
-
 // ── PWA ──
-await png(rounded(512), 'public/icons/icon-512.png', 512);
-await png(rounded(512), 'public/icons/icon-192.png', 192);
-await png(fullBleed(512, 0.82), 'public/icons/maskable-512.png', 512); // raio dentro dos 80% centrais
-await png(fullBleed(512, 0.82), 'public/icons/apple-touch-icon.png', 180);
+// O desenho já cabe na zona segura do ícone "maskable" (círculo de 80% no centro), então é o mesmo para todos.
+await png(Buffer.from(ICON), 'public/icons/icon-512.png', 512);
+await png(Buffer.from(ICON), 'public/icons/icon-192.png', 192);
+await png(Buffer.from(ICON), 'public/icons/maskable-512.png', 512);
+await png(Buffer.from(ICON), 'public/icons/apple-touch-icon.png', 180);
 
-// ── Android (ícone adaptativo: 108dp, zona segura = 66% central) ──
-await png(rounded(1024), 'assets/icon-only.png', 1024);
-await png(svg(1024, bolt(1024, 1.4)), 'assets/icon-foreground.png', 1024);
-await png(svg(1024, `${GRADIENT}<rect width="1024" height="1024" fill="url(#g)"/>`), 'assets/icon-background.png', 1024);
+// ── Android (ícone adaptativo: 108dp, zona segura = círculo de 66% no centro) ──
+const ZONA_SEGURA = 0.86; // reduz o desenho para a ponta da barra do topo ficar dentro do círculo
+await png(Buffer.from(ICON), 'assets/icon-only.png', 1024);
+await png(svg(`<g transform="translate(512 512) scale(${ZONA_SEGURA}) translate(-512 -512)">${LOGO}</g>`), 'assets/icon-foreground.png', 1024);
+await png(svg(FUNDO), 'assets/icon-background.png', 1024);
 
 // Não há imagem de abertura (splash) de propósito: o app abre direto na tela inicial, e a abertura do Android é só
-// um fundo liso da cor do app (res/values/styles.xml, sprint_colors.xml). Por isso não existem assets/splash*.png.
+// um fundo liso preto (res/values/styles.xml, sprint_colors.xml); a animação do logo é do index.html.
+// Por isso não existem assets/splash*.png.
 
 console.log('Ícones gerados em public/icons e assets.');

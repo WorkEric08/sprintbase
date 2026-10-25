@@ -34,6 +34,8 @@ keystore.properties
 # APK de release gerado por "npm run android:release"
 release/
 
-# Medição de inicialização (npm run perf)
+# Medição de inicialização (npm run perf, npm run perf:abertura) e build do teste da abertura (npm run e2e:abertura)
 .perf-dist/
+.abertura-dist/
+.perf-abertura-svg/
 scripts/perf/.results/

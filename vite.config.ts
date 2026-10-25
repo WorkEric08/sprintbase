@@ -44,7 +44,7 @@ export default defineConfig(({ mode, command }) => ({
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        background_color: '#f9fafb',
+        background_color: '#000000', // = fundo da abertura animada (index.html) e da abertura nativa: sem emenda
         theme_color: '#f9fafb',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },

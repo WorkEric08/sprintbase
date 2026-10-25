@@ -3,12 +3,162 @@
 
 <head>
   <meta charset="UTF-8" />
+  <script>
+    // Anota o que dá errado ANTES de qualquer outra coisa carregar: se o app não abrir, a abertura mostra o motivo.
+    // O `error` em captura pega também arquivos que não carregaram (script, CSS), que não "borbulham" até o window.
+    window.__errosDaAbertura = [];
+    (function () {
+      function anota(texto) { if (window.__errosDaAbertura.length < 20) window.__errosDaAbertura.push(String(texto)); }
+      window.addEventListener('error', function (e) {
+        var alvo = e.target;
+        if (alvo && alvo !== window && (alvo.src || alvo.href)) anota('Arquivo que não carregou: ' + (alvo.src || alvo.href));
+        else anota((e.message || 'Erro') + (e.filename ? ' (' + e.filename + ':' + e.lineno + ')' : ''));
+      }, true);
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        anota('Promessa rejeitada: ' + (r && r.message ? r.message : r));
+      });
+    })();
+  </script>
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Sprint</title>
   <meta name="theme-color" content="#f9fafb" />
+  <style>
+    /* Abertura (2 s): camada preta por cima do app, que carrega por baixo. Tudo aqui é inline de propósito, sem depender
+       do bundle. Só `transform` é animado nas peças (o navegador o faz na placa de vídeo, sem a thread principal, que
+       nos primeiros 0,6 s está ocupada carregando o app); `opacity` só na saída, no próprio elemento.
+       Medidas em "u" = 1/1024 do quadro do logo (o desenho do ícone, 1024 × 1024). O estado normal (sem animação) já é
+       o logo completo: com movimento reduzido, ou se a animação falhar, é isso que aparece.
+       Os tempos do contorno saem de scripts/abertura-curva.mjs. */
+    #abertura {
+      --sprint: #6a5cff;
+      --q: min(58.6vmin, 380px);
+      --u: calc(var(--q) / 1024);
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0; /* (sem `inset`: WebViews antigos) */
+      z-index: 2147483000;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    #abertura[data-saindo] {
+      pointer-events: none;
+      animation: ab-sai 320ms ease-out forwards;
+    }
+    #abertura [hidden] { display: none !important; }
+    .ab-quadro { position: relative; width: var(--q); height: var(--q); }
+    .ab-quadro > *, .ab-quadro i, .ab-quadro b { position: absolute; display: block; box-sizing: border-box; }
+
+    /* barra do topo */
+    .ab-barra {
+      left: calc(var(--u) * 377); top: calc(var(--u) * 153);
+      width: calc(var(--u) * 270); height: calc(var(--u) * 44);
+      background: var(--sprint);
+      will-change: transform;
+      animation: ab-x 300ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms backwards;
+    }
+    /* haste (coroa) a 45°, no ponto por onde o ponteiro passa aos 250 ms */
+    .ab-haste { left: calc(var(--u) * 512); top: calc(var(--u) * 574); width: 0; height: 0; transform: rotate(-45deg); }
+    .ab-haste i {
+      left: calc(var(--u) * 272); top: calc(var(--u) * -18.5);
+      width: calc(var(--u) * 83.7); height: calc(var(--u) * 37);
+      background: var(--sprint);
+      transform-origin: 0 50%;
+      will-change: transform;
+      animation: ab-x 240ms cubic-bezier(0.3, 1.5, 0.5, 1) 250ms backwards;
+    }
+
+    /* contorno: duas metades de anel que giram por trás de uma janela fixa (overflow) e vão aparecendo, em sequência */
+    .ab-metade {
+      top: calc(var(--u) * 277); width: calc(var(--u) * 297); height: calc(var(--u) * 594);
+      overflow: hidden;
+    }
+    .ab-metade--d { left: calc(var(--u) * 512); }
+    .ab-metade--e { left: calc(var(--u) * 215); }
+    .ab-arco {
+      top: 0; width: calc(var(--u) * 297); height: calc(var(--u) * 594);
+      border: calc(var(--u) * 49) solid var(--sprint);
+      border-left-width: 0;
+      border-radius: 0 calc(var(--u) * 297) calc(var(--u) * 297) 0;
+      transform-origin: 0 50%; /* o centro do anel */
+      will-change: transform;
+    }
+    .ab-metade--d .ab-arco { left: 0; animation: ab-arco-d 400ms cubic-bezier(0.65, 0, 0.825, 0.5) backwards; }
+    .ab-metade--e .ab-arco { left: calc(var(--u) * 297); transform: rotate(180deg); animation: ab-arco-e 400ms cubic-bezier(0.175, 0.5, 0.35, 1) 400ms backwards; }
+
+    /* ponteiro: gira uma volta (800 ms) à frente do contorno e encolhe até o centro quando o visto nasce */
+    .ab-ponteiro {
+      left: calc(var(--u) * 512); top: calc(var(--u) * 574); width: 0; height: 0;
+      will-change: transform;
+      animation: ab-gira 800ms cubic-bezier(0.65, 0, 0.35, 1) backwards;
+    }
+    .ab-ponteiro i {
+      left: calc(var(--u) * -18); top: calc(var(--u) * -215);
+      width: calc(var(--u) * 36); height: calc(var(--u) * 215);
+      background: var(--sprint);
+      transform: scaleY(0);
+      transform-origin: 50% 100%;
+      will-change: transform;
+      animation: ab-ponteiro 800ms linear backwards;
+    }
+
+    /* visto: nasce no centro com um leve estouro de escala; cada braço é uma barra, estendida meia espessura no vértice */
+    .ab-visto {
+      left: 0; top: 0; width: 100%; height: 100%;
+      transform-origin: calc(var(--u) * 515.5) calc(var(--u) * 592);
+      will-change: transform;
+      animation: ab-nasce 360ms cubic-bezier(0.3, 1.5, 0.5, 1) 640ms backwards;
+    }
+    .ab-visto i { height: calc(var(--u) * 48); background: var(--sprint); transform-origin: 0 50%; }
+    .ab-visto i:nth-child(1) {
+      left: calc(var(--u) * 382.25); top: calc(var(--u) * 565.75); width: calc(var(--u) * 153.3);
+      transform: rotate(45deg);
+    }
+    .ab-visto i:nth-child(2) {
+      left: calc(var(--u) * 457.98); top: calc(var(--u) * 675.33); width: calc(var(--u) * 287);
+      transform: rotate(-49.06deg);
+    }
+
+    /* mensagem da rede de segurança (aparece se o app não abrir em 8 s) */
+    .ab-erro {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      top: calc(50% + var(--q) * 0.38 + 12px);
+      padding: 0 24px max(24px, env(safe-area-inset-bottom));
+      overflow-y: auto;
+      text-align: center;
+    }
+    .ab-erro h2 { margin: 0 0 6px; font-size: 18px; font-weight: 800; }
+    .ab-erro p { margin: 0 0 8px; font-size: 14px; line-height: 1.4; color: #d4d4d8; }
+    .ab-erro ul { margin: 0 auto 14px; padding: 0; max-width: 460px; list-style: none; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; color: #a1a1aa; word-break: break-all; }
+    .ab-erro button {
+      min-height: 44px; padding: 0 24px; border: 0; border-radius: 12px;
+      background: var(--sprint); color: #fff; font: 700 15px/1 system-ui, sans-serif;
+    }
+
+    @keyframes ab-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes ab-arco-d { from { transform: rotate(-180deg); } to { transform: rotate(0deg); } }
+    @keyframes ab-arco-e { from { transform: rotate(0deg); } to { transform: rotate(180deg); } }
+    @keyframes ab-gira { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes ab-ponteiro {
+      0% { transform: scaleY(0); animation-timing-function: ease-out; }
+      12% { transform: scaleY(1); }
+      77% { transform: scaleY(1); animation-timing-function: ease-in; }
+      100% { transform: scaleY(0); }
+    }
+    @keyframes ab-nasce { from { transform: scale(0); } to { transform: scale(1); } }
+    @keyframes ab-sai { to { opacity: 0; } }
+
+    /* Movimento reduzido: o logo completo e parado (o estado normal acima); sai assim que o app está pronto. */
+    @media (prefers-reduced-motion: reduce) {
+      #abertura .ab-quadro * { animation: none; }
+    }
+  </style>
   <script>
     // Evita flash de cor errada: aplica o tema salvo antes do React montar.
     // 'sprint_theme' é um espelho do tema guardado no IndexedDB (ver AppDataContext).
@@ -24,6 +174,73 @@
 </head>
 
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+  <div id="abertura">
+    <div class="ab-quadro" aria-hidden="true">
+      <div class="ab-barra"></div>
+      <div class="ab-haste"><i></i></div>
+      <div class="ab-metade ab-metade--d"><b class="ab-arco"></b></div>
+      <div class="ab-metade ab-metade--e"><b class="ab-arco"></b></div>
+      <div class="ab-ponteiro"><i></i></div>
+      <div class="ab-visto"><i></i><i></i></div>
+    </div>
+    <div class="ab-erro" role="alert" hidden>
+      <h2>O app está demorando para abrir</h2>
+      <p>Nada foi apagado: seus dados continuam guardados neste aparelho.</p>
+      <ul></ul>
+      <button type="button">Tentar de novo</button>
+    </div>
+  </div>
+  <script>
+    // Início da abertura (o app, em services/abertura.ts, conta o tempo a partir daqui).
+    window.__aberturaInicio = performance.now();
+    (function () {
+      var el = document.getElementById('abertura');
+
+      // Duração só para os testes: a chave 'sprint-abertura-ms' = 0 tira a abertura de cena (não pega toque nem espera).
+      try {
+        var ms = localStorage.getItem('sprint-abertura-ms');
+        if (ms !== null && ms.trim() !== '' && Number(ms) === 0) { el.remove(); return; }
+      } catch (e) { }
+
+      // No APK a abertura nativa (preta, sem ícone) sai no primeiro quadro pintado: a animação é desta página.
+      var cap = window.Capacitor;
+      if (cap && cap.isNativePlatform && cap.isNativePlatform() && cap.nativePromise) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { cap.nativePromise('SplashScreen', 'hide', {}).catch(function () { }); });
+        });
+      }
+
+      // Rede de segurança: se o app não ficar pronto em 8 s, mostra o que deu errado e um jeito de tentar de novo.
+      setTimeout(function () {
+        if (!el.isConnected || el.hasAttribute('data-saindo')) return;
+        var painel = el.querySelector('.ab-erro');
+        var lista = painel.querySelector('ul');
+        var vistos = {};
+        window.__errosDaAbertura.filter(function (t) { return vistos[t] ? false : (vistos[t] = true); }).slice(0, 3).forEach(function (t) {
+          var li = document.createElement('li');
+          li.textContent = t;
+          lista.appendChild(li);
+        });
+        painel.removeAttribute('hidden');
+        painel.querySelector('button').addEventListener('click', function () {
+          // Limpa só o que é do app (service worker e caches do próprio app) e recarrega. Nunca toca em IndexedDB
+          // nem em localStorage: os dados da pessoa ficam. Caches de outros nomes (ex.: modelos grandes) também ficam.
+          var tarefas = [];
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            tarefas.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) { return r.unregister(); }));
+            }));
+          }
+          if (window.caches && caches.keys) {
+            tarefas.push(caches.keys().then(function (nomes) {
+              return Promise.all(nomes.filter(function (n) { return /workbox|sprint/i.test(n); }).map(function (n) { return caches.delete(n); }));
+            }));
+          }
+          Promise.all(tarefas).catch(function () { }).then(function () { location.reload(); });
+        });
+      }, 8000);
+    })();
+  </script>
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

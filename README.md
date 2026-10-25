@@ -111,7 +111,9 @@ O app abre em [http://localhost:3001](http://localhost:3001). Como o servidor es
 | `npm run lint` | Verifica os tipos com o TypeScript (`tsc --noEmit`) |
 | `npm test` | Roda os testes unitários |
 | `npm run e2e` | Teste ponta a ponta no navegador (veja abaixo para o aplicativo no celular) |
+| `npm run e2e:abertura` | Testa, no Chrome, a animação de abertura (quadros, duração, app lento, falhas); constrói o app antes |
 | `npm run perf` | Mede a inicialização do app (tempo até a tela inicial pronta) e compara com medições salvas |
+| `npm run perf:abertura` | Mede quando a tela inicial fica pronta, contando do primeiro quadro da abertura, com a CPU 1×, 6×, 10× e 20× mais lenta |
 
 ### Gerar o APK
 
@@ -141,10 +143,23 @@ O app abre direto na tela inicial, com os dados já desenhados. O que foi feito 
 
 Resultado na medição: tela inicial pronta em **476 ms → 280 ms** (−41%) e JavaScript inicial de **131 KB → 62 KB**. Esses valores são do Chrome no PC, úteis para comparar versões entre si; no celular o tempo absoluto é outro. O teste ponta a ponta (`npm run e2e -- --preview`) falha se o primeiro arquivo passar do orçamento de tamanho.
 
+## Abertura animada
+
+Ao abrir, o app mostra por 2 s o logo se desenhando: um cronômetro cujo ponteiro dá uma volta, desenhando o contorno atrás de si, e que termina no visto. É uma camada **por cima** do app, que carrega por baixo já na tela inicial.
+
+- **Onde mora:** tudo inline no `index.html` (HTML, CSS e um script mínimo), sem depender do bundle, que é justamente o que pode falhar. Começa no primeiro quadro pintado, antes de qualquer JavaScript (`window.__aberturaInicio`).
+- **Tempo:** 2 s no total, com o fade de saída (320 ms) incluído. Ela só sai quando passou o tempo **e** o app está pronto (tela inicial desenhada e fontes carregadas, com no máximo 1,5 s de espera por elas): app pronto cedo, a animação termina normalmente; app lento, o logo completo fica parado esperando e sai na hora em que o app abre. A saída é `encerrarAbertura()` (`services/abertura.ts`), chamada pelo `App.tsx` junto da marca `sprint:ready`.
+- **Só `transform` nas peças:** o navegador anima `transform` na placa de vídeo, sem a thread principal, que nos primeiros 0,6 s está ocupada carregando o app. Por isso o contorno é feito de duas metades de anel que giram por trás de uma janela fixa (a curva de ease do desenho é cortada ao meio com De Casteljau: `node scripts/abertura-curva.mjs`), e não de um SVG com `stroke-dashoffset` (que só anda na thread principal e trava). O mesmo vale para `clip-path`, largura, posição, etc. Um teste confere que toda animação das peças anima só `transform`.
+- **Toque:** enquanto cobre a tela a abertura pega o toque; ao começar a sair, deixa de pegar.
+- **Movimento reduzido** (`prefers-reduced-motion`): logo completo e parado, e sai assim que o app está pronto.
+- **Rede de segurança:** se o app não ficar pronto em 8 s, a abertura mostra "O app está demorando para abrir", diz que nada foi apagado, mostra até 3 linhas do que deu errado (anotado desde o começo da página em `window.__errosDaAbertura`) e o botão **Tentar de novo**: ele desregistra os service workers, apaga só os caches do próprio app e recarrega. Nunca toca em IndexedDB nem em localStorage. Se o app abrir, mesmo lento, a abertura some junto com a mensagem.
+- **Só para testes:** a duração padrão é `DURACAO_DA_ABERTURA_MS` (2000); a chave `sprint-abertura-ms` do localStorage a substitui, e com `0` a abertura nem entra (é o que o `npm run e2e` usa, para ela não segurar o toque). `npm run e2e:abertura` testa a duração de verdade.
+- **No Android:** a abertura do sistema fica preta, sem ícone (`sprint_splash_background`, igual ao `background_color` do manifest e ao fundo do WebView) e sai no primeiro quadro que a página pinta; a animação é da página. O que vem antes disso (do toque no ícone até o WebView pintar) é do sistema e não dá para medir pela web.
+
 ## Estrutura do projeto
 
 ```
-├── index.html              # Página base (aplica o tema salvo antes do React montar)
+├── index.html              # Página base: abertura animada inline e tema salvo (aplicado antes do React montar)
 ├── index.tsx               # Ponto de entrada da aplicação
 ├── App.tsx                 # Estrutura principal: abas, menu lateral e navegação inferior
 ├── types.ts                # Tipos e constantes do domínio (matérias, blocos, registros)
@@ -153,7 +168,7 @@ Resultado na medição: tela inicial pronta em **476 ms → 280 ms** (−41%) e 
 ├── contexts/               # Contexto com a fonte única de dados do app
 ├── hooks/                  # Hooks reutilizáveis (cronômetro, botão voltar, ofensiva)
 ├── utils/                  # Lógica pura e testada (datas, ofensiva, calendário, backup)
-├── services/               # Serviços da versão web (PWA)
+├── services/               # Serviços: PWA (só web) e saída da abertura animada
 ├── android/                # Projeto Android gerado pelo Capacitor
 ├── scripts/                # Scripts do APK, dos ícones e dos testes ponta a ponta
 └── public/                 # Arquivos estáticos (ícones)

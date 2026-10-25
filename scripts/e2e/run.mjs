@@ -267,6 +267,10 @@ function findChrome() {
 
 const MOBILE = { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 
+// A abertura de 2 s (index.html, services/abertura.ts) cobriria o app e seguraria o toque: nesta bateria a chave de
+// duração fica em 0 (a camada nem entra). A abertura em si é testada por scripts/e2e/abertura.mjs.
+const semAbertura = () => { try { localStorage.setItem('sprint-abertura-ms', '0'); } catch { /* sem localStorage */ } };
+
 const web = {
   name: 'web',
   async open() {
@@ -279,6 +283,7 @@ const web = {
     });
     page = (await browser.pages())[0] ?? (await browser.newPage());
     await page.setViewport(MOBILE);
+    await page.evaluateOnNewDocument(semAbertura);
     await page.goto(url, { waitUntil: 'load' });
   },
   async pressBack() {
@@ -298,6 +303,8 @@ const android = {
       .then(pid => adb('forward', 'tcp:9222', `localabstract:webview_devtools_remote_${pid}`));
     browser = await waitFor(() => puppeteer.connect({ browserURL: 'http://127.0.0.1:9222', defaultViewport: null }).catch(() => null), 'conexão com o WebView', 15000);
     page = await waitFor(async () => (await browser.pages()).find(p => p.url().includes('localhost')), 'página do app no WebView', 15000);
+    await page.evaluateOnNewDocument(semAbertura); // vale a partir da próxima carga (a primeira, ao abrir o app, já mostrou a abertura)
+    await page.evaluate(semAbertura);
   },
   async open() {
     const devices = adbOut('devices').split('\n').slice(1).filter(l => /\bdevice\b/.test(l));

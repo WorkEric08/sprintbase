@@ -2,7 +2,10 @@
 <resources>
     <!-- Fundo do app no tema claro (igual a utils/theme.ts e ao gray-50 do Tailwind). -->
     <color name="sprint_window_background">#f9fafb</color>
+    <!-- Fundo da abertura do sistema e da animação de abertura do app (index.html): preto nos dois temas.
+         É também o background_color do manifest do PWA (vite.config.ts). -->
+    <color name="sprint_splash_background">#000000</color>
     <!-- Abertura no Android 11 e anteriores: o plugin SplashScreen do Capacitor procura o drawable "splash".
-         Aqui ele é só um fundo liso da cor do app (claro/escuro seguem o modo do aparelho). -->
-    <drawable name="splash">@color/sprint_window_background</drawable>
+         Aqui ele é só um fundo liso preto, como no Android 12+. -->
+    <drawable name="splash">@color/sprint_splash_background</drawable>
 </resources>

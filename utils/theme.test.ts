@@ -35,9 +35,9 @@ describe('cor de fundo do tema', () => {
     expect(html).toContain(THEME_BACKGROUND.dark);
   });
 
-  it('o manifest do PWA usa a cor do tema claro', () => {
+  it('o manifest do PWA: tema claro na barra e o preto da abertura animada de fundo (sem emenda na troca)', () => {
     const vite = hex(read('vite.config.ts'));
-    expect(vite).toContain(`background_color: '${THEME_BACKGROUND.light}'`);
+    expect(vite).toContain("background_color: '#000000'");
     expect(vite).toContain(`theme_color: '${THEME_BACKGROUND.light}'`);
   });
 

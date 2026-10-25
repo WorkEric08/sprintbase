@@ -26,7 +26,10 @@ export async function syncSystemBars(theme: ThemeName): Promise<void> {
 
 let splashHidden = false;
 
-/** Some com a splash nativa. Idempotente: pode ser chamada de mais de um lugar. */
+/**
+ * Some com a splash nativa. Idempotente: pode ser chamada de mais de um lugar. Quem a esconde primeiro é o script do
+ * index.html (no primeiro quadro pintado, para a animação de abertura da página aparecer); aqui é a garantia.
+ */
 export function hideSplash() {
   if (!isNative || splashHidden) return;
   splashHidden = true;
@@ -34,8 +37,8 @@ export function hideSplash() {
 }
 
 /**
- * Chamada uma vez no bootstrap. A splash fica até os dados carregarem (Shell chama
- * `hideSplash`); o timeout garante que ela nunca prenda o usuário se algo travar.
+ * Chamada uma vez no bootstrap. O timeout garante que a splash nativa nunca prenda o usuário se algo travar
+ * (o normal é o index.html escondê-la no primeiro quadro e o Shell chamar `hideSplash` de novo).
  */
 export function initNative() {
   if (!isNative) return;

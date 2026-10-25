@@ -6,8 +6,8 @@ const config: CapacitorConfig = {
   appName: 'Sprint',
   webDir: 'dist',
   android: {
-    // Cor atrás do WebView enquanto ele carrega (a splash cobre o resto).
-    backgroundColor: '#f9fafb',
+    // Cor atrás do WebView enquanto ele carrega: preta, a mesma da abertura animada do index.html (sem emenda na troca).
+    backgroundColor: '#000000',
     // Só habilita inspeção remota (chrome://inspect e testes ponta a ponta) em build de debug.
     webContentsDebuggingEnabled: process.env.SPRINT_WEBVIEW_DEBUG === '1',
   },
@@ -18,8 +18,9 @@ const config: CapacitorConfig = {
       initialViewportFitValueHint: 'cover',
     },
     SplashScreen: {
-      // A abertura é só um fundo liso da cor do app (sem logo): ver res/values/styles.xml. Ela some assim que a
-      // tela inicial carrega os dados (utils/native.ts); a cor vem do tema Android (claro/escuro), não daqui.
+      // A abertura do sistema é só um fundo liso preto (sem logo): ver res/values/styles.xml. A animação do logo é do
+      // index.html e a abertura do sistema sai no primeiro quadro que a página pinta (script do index.html); a cor
+      // vem do tema Android, não daqui. utils/native.ts só garante que ela nunca fique presa.
       launchAutoHide: false,
       launchFadeOutDuration: 150,
       showSpinner: false,

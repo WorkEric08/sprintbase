@@ -5,6 +5,7 @@ import { ProgressView, SettingsPanel, preloadScreens } from './components/screen
 import WelcomeBackCard from './components/WelcomeBackCard';
 import { useStreak } from './hooks/useStreak';
 import { daysBetween } from './utils/dateUtils';
+import { encerrarAbertura } from './services/abertura';
 import { hideSplash } from './utils/native';
 import { mark } from './utils/perf';
 import { SETTING_KEYS } from './utils/settings';
@@ -29,10 +30,9 @@ const Spinner: React.FC = () => (
   </div>
 );
 
+// O ícone oficial do app (public/icon.svg), o mesmo do favicon e da tela inicial do celular.
 const Logo: React.FC = () => (
-  <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/30">
-    <Icon name="rotate" className="text-white text-sm" />
-  </div>
+  <img src="/icon.svg" alt="" width={32} height={32} className="w-8 h-8 rounded-xl shrink-0 shadow-md shadow-indigo-500/30" />
 );
 
 const Shell: React.FC = () => {
@@ -64,7 +64,8 @@ const Shell: React.FC = () => {
     mainRef.current?.scrollTo({ top: 0 });
   }, [activeTab]);
 
-  // A splash nativa fica até os dados carregarem (no navegador não faz nada).
+  // Garante que a splash nativa saiu (o index.html já a esconde no primeiro quadro; no navegador não faz nada) e avisa a
+  // abertura animada que o app está pronto, mais abaixo.
   useEffect(() => {
     if (loading) return;
     mark('commit');
@@ -72,6 +73,7 @@ const Shell: React.FC = () => {
     // Dois quadros depois da primeira renderização com dados = a tela inicial já está pintada.
     requestAnimationFrame(() => requestAnimationFrame(() => {
       mark('ready');
+      void encerrarAbertura();
       preloadScreens(); // as outras telas chegam em segundo plano, sem atrasar a primeira pintura
     }));
   }, [loading]);

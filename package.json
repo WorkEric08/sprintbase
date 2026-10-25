@@ -17,9 +17,11 @@
     "android:devices": "node scripts/android.mjs devices",
     "icons": "node scripts/generate-icons.mjs && capacitor-assets generate --android",
     "e2e": "node scripts/e2e/run.mjs",
+    "e2e:abertura": "node scripts/e2e/abertura.mjs",
     "android:release": "node scripts/android.mjs release",
     "android:install-release": "node scripts/android.mjs install-release",
-    "perf": "node scripts/perf/startup.mjs"
+    "perf": "node scripts/perf/startup.mjs",
+    "perf:abertura": "node scripts/perf/abertura.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",
