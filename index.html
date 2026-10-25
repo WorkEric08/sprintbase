@@ -167,7 +167,7 @@
         var theme = localStorage.getItem('sprint_theme');
         var isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.classList.toggle('dark', isDark);
-        document.querySelector('meta[name="theme-color"]').setAttribute('content', isDark ? '#030712' : '#f9fafb');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', isDark ? '#000000' : '#f9fafb');
       } catch (e) { }
     })();
   </script>

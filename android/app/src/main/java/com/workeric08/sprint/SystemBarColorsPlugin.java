@@ -31,14 +31,14 @@ public class SystemBarColorsPlugin extends Plugin {
     private static final String PREFS = "system_bar_colors";
     private static final String KEY_COLOR = "color";
 
-    private static final int DARK = Color.parseColor("#030712");
+    private static final int DARK = Color.parseColor("#000000");
     private static final int LIGHT = Color.parseColor("#f9fafb");
 
     @PluginMethod
     public void setColor(PluginCall call) {
         String hex = call.getString("color");
         if (hex == null) {
-            call.reject("Informe a cor (ex.: #030712).");
+            call.reject("Informe a cor (ex.: #000000).");
             return;
         }
         final int color;

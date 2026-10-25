@@ -10,6 +10,8 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      // O fundo escuro do app (`dark:bg-gray-950`) é preto puro, não o cinza-azulado padrão do Tailwind (#030712).
+      colors: { gray: { 950: '#000000' } },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },

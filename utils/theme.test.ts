@@ -10,8 +10,10 @@ const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.ur
 const hex = (s: string) => s.toLowerCase();
 
 describe('cor de fundo do tema', () => {
-  it('claro = gray-50 e escuro = gray-950 do Tailwind', () => {
-    expect(THEME_BACKGROUND).toEqual({ light: '#f9fafb', dark: '#030712' });
+  it('claro = gray-50 e escuro = gray-950 do Tailwind, que o tailwind.config.js redefine como preto puro', () => {
+    expect(THEME_BACKGROUND).toEqual({ light: '#f9fafb', dark: '#000000' });
+    expect(read('tailwind.config.js')).toContain("colors: { gray: { 950: '#000000' } }");
+    expect(hex(read('index.css'))).toContain('background-color: #000000;');
   });
 
   it('o plugin Java usa as mesmas cores', () => {
