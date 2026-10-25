@@ -22,20 +22,27 @@ const LOGO = ICON.replace(FUNDO, '').replace(/^<svg[^>]*>|<\/svg>\s*$/g, ''); //
 
 const svg = (body) =>
   Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">${body}</svg>`);
-
 const png = (buf, file, size) => sharp(buf, { density: 384 }).resize(size, size).png().toFile(out(file));
 
-// ── PWA ──
-// O desenho já cabe na zona segura do ícone "maskable" (círculo de 80% no centro), então é o mesmo para todos.
-await png(Buffer.from(ICON), 'public/icons/icon-512.png', 512);
-await png(Buffer.from(ICON), 'public/icons/icon-192.png', 192);
-await png(Buffer.from(ICON), 'public/icons/maskable-512.png', 512);
-await png(Buffer.from(ICON), 'public/icons/apple-touch-icon.png', 180);
+/** O ícone completo (fundo preto + logo) com o logo `zoom` vezes maior, ampliado a partir do centro. */
+const ampliado = (zoom) => svg(`${FUNDO}<g transform="translate(512 512) scale(${zoom}) translate(-512 -512)">${LOGO}</g>`);
 
-// ── Android (ícone adaptativo: 108dp, zona segura = círculo de 66% no centro) ──
-const ZONA_SEGURA = 0.86; // reduz o desenho para a ponta da barra do topo ficar dentro do círculo
-await png(Buffer.from(ICON), 'assets/icon-only.png', 1024);
-await png(svg(`<g transform="translate(512 512) scale(${ZONA_SEGURA}) translate(-512 -512)">${LOGO}</g>`), 'assets/icon-foreground.png', 1024);
+// ── PWA ──
+// O logo (public/icon.svg, o oficial) ocupa 58% × 70% do quadrado; nos ícones abaixo ele é ampliado para ficar maior
+// na tela inicial. A "maskable" tem zona segura de 80% (círculo de raio 410): o canto da barra do topo está a 383 do
+// centro, então ali o limite é 1,07.
+const ZOOM_PWA = 1.12;
+const ZOOM_MASKABLE = 1.05;
+await png(ampliado(ZOOM_PWA), 'public/icons/icon-512.png', 512);
+await png(ampliado(ZOOM_PWA), 'public/icons/icon-192.png', 192);
+await png(ampliado(ZOOM_MASKABLE), 'public/icons/maskable-512.png', 512);
+await png(ampliado(ZOOM_PWA), 'public/icons/apple-touch-icon.png', 180);
+
+// ── Android (ícone adaptativo: 108dp, zona segura = círculo de 66% no centro, raio 338) ──
+// 0,92 deixa só a quina da barra do topo (a 383 do centro) um pouco além do círculo; o anel e o visto ficam inteiros.
+const ZOOM_ADAPTATIVO = 0.92;
+await png(ampliado(ZOOM_PWA), 'assets/icon-only.png', 1024); // ícones antigos (quadrado e redondo)
+await png(svg(`<g transform="translate(512 512) scale(${ZOOM_ADAPTATIVO}) translate(-512 -512)">${LOGO}</g>`), 'assets/icon-foreground.png', 1024);
 await png(svg(FUNDO), 'assets/icon-background.png', 1024);
 
 // Não há imagem de abertura (splash) de propósito: o app abre direto na tela inicial, e a abertura do Android é só
