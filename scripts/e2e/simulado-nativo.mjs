@@ -319,11 +319,39 @@ async function main() {
     const rows = await waitFor(async () => { const r = await idb('redacaoSessions', 'all'); return r.length ? r : null; }, 'rascunho gravado', 2000);
     assert(rows[0].completedAt === null && rows[0].text === RTEXT, 'o rascunho gravado não tem o texto digitado');
   });
-  await check('Redação: a tela fica ligada enquanto o cronômetro corre e solta ao pausar', async () => {
+  await check('Redação: ao começar a escrever agenda o aviso de FIM do cronômetro (daqui a 90 min), com o canal próprio', async () => {
+    const sched = await lastCall('LocalNotifications', 'schedule');
+    assert(sched, 'não agendou o aviso de fim da redação');
+    const [n] = sched.options.notifications;
+    assert(sched.options.notifications.length === 1 && n.id === 72001 && n.channelId === 'redacao', 'aviso da redação incorreto');
+    const left = new Date(n.schedule.at).getTime() - Date.now();
+    assert(left > 89 * 60_000 && left <= 90 * 60_000, `o aviso devia ser para daqui a ~90 min (${Math.round(left / 60_000)} min)`);
+    assert(n.schedule.allowWhileIdle === true && n.isExactNotification === true, 'aviso sem allowWhileIdle ou fora do padrão de alarme');
+    const channel = (await calls('LocalNotifications')).filter(c => c.method === 'createChannel').pop();
+    assert(channel.options.id === 'redacao', 'canal da redação não criado');
+  });
+  await check('Redação: a tela fica ligada enquanto o cronômetro corre e solta ao pausar (e o aviso de fim é cancelado)', async () => {
     assert((await calls('KeepAwake')).some(c => c.method === 'keepAwake'), 'não pediu para manter a tela ligada ao escrever');
     await clearCalls();
     await click('Pausar cronômetro');
     await waitFor(async () => (await calls('KeepAwake')).some(c => c.method === 'allowSleep'), 'soltar a tela na pausa');
+    await waitFor(async () => (await calls('LocalNotifications')).some(c => c.method === 'cancel' && c.options.notifications.some(x => x.id === 72001)), 'cancelar o aviso de fim ao pausar');
+  });
+  await check('Redação: retomar um rascunho (cronômetro parado) cancela um aviso antigo que ficou agendado de antes de o app morrer', async () => {
+    await page.evaluate(() => window.__listeners['App.appStateChange']({ isActive: true }));
+    await click('Voltar', { exact: true });
+    await click('Sair e guardar rascunho');
+    await waitFor(async () => (await page.$('[data-testid="redacao-writer"]')) === null, 'sair da escrita');
+    const before = await idb('redacaoSessions', 'all');
+    assert(before.length === 1 && before[0].completedAt === null, `devia haver 1 rascunho no banco antes de recarregar (${before.length})`);
+    await page.reload({ waitUntil: 'load' });
+    await waitFor(async () => !(await page.$('.animate-spin')), 'carregamento', 10000);
+    await clearCalls();
+    await click('Redação', { exact: true });
+    await click('Continuar', { exact: true });
+    await waitFor(() => page.$('#redacao-text'), 'campo de texto');
+    await waitFor(async () => (await calls('LocalNotifications')).some(c => c.method === 'cancel' && c.options.notifications.some(x => x.id === 72001)), 'cancelar o aviso antigo');
+    assert(!(await calls('LocalNotifications')).some(c => c.method === 'schedule'), 'não devia agendar nada com o cronômetro parado');
   });
   await check('Redação: voltar ao app ativo (isActive) não grava nada de novo e sair guarda o rascunho', async () => {
     await page.evaluate(() => window.__listeners['App.appStateChange']({ isActive: true }));

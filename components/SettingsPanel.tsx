@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { Suspense, useState } from 'react';
 import { useAppData } from '../contexts/AppDataContext';
+import { BANCAS } from '../types';
 import { isDevModeUser } from '../utils/devMode';
+import { resolveEdital } from '../utils/edital';
+import { daysUntilExam, formatExamDate, isDateKey } from '../utils/exam';
+import { todayKey } from '../utils/dateUtils';
 import { SETTING_KEYS, isStreakEnabled } from '../utils/settings';
 import BackupCard from './BackupCard';
 import PWACard from './PWACard';
+import EditalPickerModal from './EditalPickerModal';
+import { DatePickerModal, OverlayFallback } from './screens';
 import Icon from './Icon';
 
 const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
@@ -14,8 +20,15 @@ const THEME_OPTIONS = [
 ] as const;
 
 const SettingsPanel: React.FC = () => {
-  const { userName, setUserName, theme, setTheme, settings, setSetting } = useAppData();
+  const { userName, setUserName, theme, setTheme, settings, setSetting, removeSetting } = useAppData();
   const streakEnabled = isStreakEnabled(settings);
+  const [pickingEdital, setPickingEdital] = useState(false);
+  const [pickingDate, setPickingDate] = useState(false);
+
+  const edital = resolveEdital(settings[SETTING_KEYS.selectedEdital], settings[SETTING_KEYS.customEdital]);
+  const examDate = isDateKey(settings[SETTING_KEYS.examDate]) ? settings[SETTING_KEYS.examDate] : null;
+  const examDays = examDate ? daysUntilExam(examDate, todayKey()) : null;
+  const targetBanca = settings[SETTING_KEYS.targetBanca] ?? null;
 
   return (
     <div className="max-w-lg mx-auto space-y-7">
@@ -81,9 +94,77 @@ const SettingsPanel: React.FC = () => {
         </button>
       </div>
 
+      <div className="space-y-2">
+        <span className={LABEL}>Prova</span>
+        <div className="space-y-2">
+          <button
+            onClick={() => setPickingEdital(true)}
+            className="w-full flex items-center justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3.5 text-left active:scale-[0.99] transition-transform"
+          >
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-gray-800 dark:text-gray-100">Edital</span>
+              <span data-testid="edital-value" className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                {edital ? edital.name : 'Nenhum: toque para escolher o ENEM ou criar o seu'}
+              </span>
+            </span>
+            <Icon name="chevron-right" className="text-xs text-gray-300 dark:text-gray-600 shrink-0" />
+          </button>
+
+          <button
+            onClick={() => setPickingDate(true)}
+            className="w-full flex items-center justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3.5 text-left active:scale-[0.99] transition-transform"
+          >
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-gray-800 dark:text-gray-100">Data da prova</span>
+              <span data-testid="exam-date-value" className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                {examDate
+                  ? `${formatExamDate(examDate)}${examDays !== null && examDays >= 0 ? ` · ${examDays === 0 ? 'é hoje' : `faltam ${examDays} ${examDays === 1 ? 'dia' : 'dias'}`}` : ' · já passou'}`
+                  : 'Não definida: aparece uma contagem regressiva na tela inicial'}
+              </span>
+            </span>
+            <Icon name="calendar-days" className="text-sm text-gray-300 dark:text-gray-600 shrink-0" />
+          </button>
+
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3.5 space-y-3">
+            <span className="block min-w-0">
+              <span className="block text-sm font-bold text-gray-800 dark:text-gray-100">Banca alvo</span>
+              <span className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">Vem marcada no registro dos blocos e é comparada em Progresso.</span>
+            </span>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Banca alvo">
+              {BANCAS.map(b => (
+                <button
+                  key={b}
+                  onClick={() => (targetBanca === b ? removeSetting(SETTING_KEYS.targetBanca) : setSetting(SETTING_KEYS.targetBanca, b))}
+                  aria-pressed={targetBanca === b}
+                  className={`px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all active:scale-95 ${
+                    targetBanca === b
+                      ? 'border-transparent bg-indigo-600 text-white'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40'
+                  }`}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <BackupCard />
 
       <PWACard />
+
+      {pickingEdital && <EditalPickerModal onClose={() => setPickingEdital(false)} />}
+      {pickingDate && (
+        <Suspense fallback={<OverlayFallback />}>
+          <DatePickerModal
+            value={examDate}
+            onSelect={date => { setSetting(SETTING_KEYS.examDate, date); setPickingDate(false); }}
+            onClear={() => { removeSetting(SETTING_KEYS.examDate); setPickingDate(false); }}
+            onClose={() => setPickingDate(false)}
+          />
+        </Suspense>
+      )}
 
       <div className="pt-4 border-t border-gray-100 dark:border-gray-800 text-center space-y-1">
         <p className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-widest">Sprint Base · v{__APP_VERSION__}</p>

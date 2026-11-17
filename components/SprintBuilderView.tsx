@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BLOCK_TYPES, BLOCK_TYPE_LABELS, BlockType, SprintItem, Subject } from '../types';
+import { useAppData } from '../contexts/AppDataContext';
 import { useBackButton } from '../hooks/useBackButton';
+import { pendingItems } from '../utils/reviewAlgorithm';
 import { formatDuration } from '../utils/format';
 import { uid } from '../utils/id';
 import Icon from './Icon';
@@ -13,6 +15,8 @@ interface Props {
 }
 
 const BREAK_STEPS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
+/** Duração inicial de uma pausa de revisão (o tempo de passar pelos subtópicos pendentes). */
+const REVIEW_BREAK_MINUTES = 15;
 
 const TYPE_BADGE: Record<BlockType, string> = {
   study: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400',
@@ -27,12 +31,17 @@ const REMOVE_BTN = 'w-11 flex items-center justify-center text-gray-300 dark:tex
 
 const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
   useBackButton(onClose);
+  const { reviewItems } = useAppData();
   const [queue, setQueue] = useState<SprintItem[]>([]);
+
+  // Revisões que já venceram (de matérias que ainda existem). Este banner é o único lembrete: o app não manda notificações de revisão.
+  const pending = pendingItems(reviewItems, Date.now(), new Set(subjects.map(s => s.id)));
+  const reviewBreakAdded = queue.some(i => i.type === 'review-break');
 
   const subjectById = (id: string) => subjects.find(s => s.id === id);
 
   const totalMinutes = queue.reduce((acc, item) => {
-    if (item.type === 'break') return acc + item.duration;
+    if (item.type === 'break' || item.type === 'review-break') return acc + item.duration;
     return acc + (subjectById(item.subjectId)?.duration ?? 0);
   }, 0);
   const studyCount = queue.filter(i => i.type === 'study').length;
@@ -42,6 +51,9 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
 
   const addBreak = () =>
     setQueue(prev => [...prev, { id: uid(), type: 'break', duration: 5 }]);
+
+  const addReviewBreak = () =>
+    setQueue(prev => [...prev, { id: uid(), type: 'review-break', duration: REVIEW_BREAK_MINUTES }]);
 
   const remove = (id: string) => setQueue(prev => prev.filter(i => i.id !== id));
 
@@ -55,7 +67,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
 
   const stepBreak = (id: string, delta: number) =>
     setQueue(prev => prev.map(item => {
-      if (item.id !== id || item.type !== 'break') return item;
+      if (item.id !== id || (item.type !== 'break' && item.type !== 'review-break')) return item;
       const idx = BREAK_STEPS.indexOf(item.duration);
       const next = Math.max(0, Math.min(BREAK_STEPS.length - 1, idx + delta));
       return { ...item, duration: BREAK_STEPS[next] };
@@ -98,26 +110,29 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
         ) : (
           <div className="space-y-2 max-w-2xl mx-auto">
             {queue.map(item => {
-              if (item.type === 'break') {
+              if (item.type === 'break' || item.type === 'review-break') {
+                const review = item.type === 'review-break';
                 const first = BREAK_STEPS.indexOf(item.duration) === 0;
                 const last = BREAK_STEPS.indexOf(item.duration) === BREAK_STEPS.length - 1;
                 return (
                   <div key={item.id} className={ROW}>
-                    <div className="w-1 shrink-0 bg-gray-200 dark:bg-gray-700" />
+                    <div className={`w-1 shrink-0 ${review ? 'bg-amber-400' : 'bg-gray-200 dark:bg-gray-700'}`} />
                     <div className="flex-1 flex items-center gap-3 px-3 py-2.5">
-                      <Icon name="mug-hot" className="text-gray-400 dark:text-gray-600 text-sm shrink-0" />
-                      <span className="flex-1 text-sm font-black text-gray-500 dark:text-gray-400 uppercase tracking-tight">Pausa</span>
+                      <Icon name={review ? 'bookmark' : 'mug-hot'} className={`text-sm shrink-0 ${review ? 'text-amber-500' : 'text-gray-400 dark:text-gray-600'}`} />
+                      <span className={`flex-1 text-sm font-black uppercase tracking-tight ${review ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {review ? 'Revisão' : 'Pausa'}
+                      </span>
                       <div className="flex items-center gap-2 shrink-0">
-                        <button onClick={() => stepBreak(item.id, -1)} disabled={first} className={STEP_BTN} aria-label="Diminuir pausa">
+                        <button onClick={() => stepBreak(item.id, -1)} disabled={first} className={STEP_BTN} aria-label={review ? 'Diminuir pausa de revisão' : 'Diminuir pausa'}>
                           <Icon name="minus" className="text-[8px]" />
                         </button>
                         <span className="text-[11px] font-black text-gray-700 dark:text-gray-300 w-12 text-center">{item.duration}min</span>
-                        <button onClick={() => stepBreak(item.id, 1)} disabled={last} className={STEP_BTN} aria-label="Aumentar pausa">
+                        <button onClick={() => stepBreak(item.id, 1)} disabled={last} className={STEP_BTN} aria-label={review ? 'Aumentar pausa de revisão' : 'Aumentar pausa'}>
                           <Icon name="plus" className="text-[8px]" />
                         </button>
                       </div>
                     </div>
-                    <button onClick={() => remove(item.id)} className={REMOVE_BTN} aria-label="Remover pausa">
+                    <button onClick={() => remove(item.id)} className={REMOVE_BTN} aria-label={review ? 'Remover pausa de revisão' : 'Remover pausa'}>
                       <Icon name="times" className="text-xs" />
                     </button>
                   </div>
@@ -155,6 +170,23 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
 
       {/* Controles */}
       <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 shrink-0">
+        {pending.length > 0 && (
+          <div data-testid="review-banner" className="mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/10 p-3">
+            <Icon name="bookmark" className="text-amber-500 shrink-0" />
+            <p className="flex-1 min-w-0 text-xs font-bold text-amber-800 dark:text-amber-300 leading-snug">
+              {pending.length === 1 ? '1 revisão pendente' : `${pending.length} revisões pendentes`}
+              {pending.some(p => p.nextReviewAt < new Date().setHours(0, 0, 0, 0)) && ' (algumas atrasadas)'}
+              . Faça uma pausa de revisão neste sprint.
+            </p>
+            <button
+              onClick={addReviewBreak}
+              disabled={reviewBreakAdded}
+              className="shrink-0 px-3 py-2 rounded-xl bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform disabled:opacity-40"
+            >
+              {reviewBreakAdded ? 'Adicionada' : 'Adicionar'}
+            </button>
+          </div>
+        )}
         <div className="chips-scroll flex gap-2 px-4 pt-3 pb-2">
           {subjects.map(subject => {
             const remaining = subject.blockCount - subject.completedBlocks.length;

@@ -18,6 +18,8 @@ interface Props {
   cycleTotal: number;
   blockLogs: BlockLog[];
   isDevMode: boolean;
+  /** Banca que já vem marcada no registro (a banca alvo). */
+  defaultBanca?: string | null;
   /** O tempo do bloco acabou: contabiliza 1 bloco concluído na matéria. */
   onComplete: () => void;
   onSaveLog: (data: PostBlockData) => void;
@@ -31,7 +33,7 @@ interface Props {
 const MINIMAL_LOG: PostBlockData = { questionsTotal: 0, questionsCorrect: 0, subtopic: '', selfScore: 3 };
 
 const BlockTimerView: React.FC<Props> = ({
-  subject, blockType, cycleIndex, cycleTotal, blockLogs, isDevMode,
+  subject, blockType, cycleIndex, cycleTotal, blockLogs, isDevMode, defaultBanca,
   onComplete, onSaveLog, onNext, onExit,
 }) => {
   const color = blockType === 'study' ? subject.color : BLOCK_TYPE_COLORS[blockType];
@@ -191,6 +193,7 @@ const BlockTimerView: React.FC<Props> = ({
           subjectTitle={subject.title}
           subjectColor={subject.color}
           blockLogs={blockLogs}
+          defaultBanca={defaultBanca}
           onSubmit={data => {
             setShowPost(false);
             onSaveLog(data);

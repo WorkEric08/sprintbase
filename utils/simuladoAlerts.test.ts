@@ -54,17 +54,17 @@ describe('notificações do simulado', () => {
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf-8');
 
 describe('integração nativa dos avisos e da tela ligada', () => {
-  it('@capacitor/local-notifications é usado SÓ no serviço dos avisos do simulado, e carregado sob demanda', () => {
-    const service = read('services/simuladoAlerts.ts');
+  it('@capacitor/local-notifications é usado SÓ em services/notify.ts, e carregado sob demanda', () => {
+    const service = read('services/notify.ts');
     expect(service).toMatch(/await import\('@capacitor\/local-notifications'\)/);
     expect(service).not.toMatch(/^import (?!type ).* from '@capacitor\/local-notifications'/m); // só `import type` (apagado no build)
-    for (const file of ['App.tsx', 'index.tsx', 'contexts/AppDataContext.tsx', 'utils/native.ts', 'services/keepAwake.ts']) {
+    for (const file of ['App.tsx', 'index.tsx', 'contexts/AppDataContext.tsx', 'utils/native.ts', 'services/keepAwake.ts', 'services/simuladoAlerts.ts', 'services/redacaoAlert.ts']) {
       expect(read(file), file).not.toContain('local-notifications');
     }
   });
 
   it('o plugin (um Proxy do Capacitor) nunca é devolvido de uma função async: o await o trataria como "thenable" e nada seria agendado', () => {
-    const service = read('services/simuladoAlerts.ts');
+    const service = read('services/notify.ts');
     expect(service).not.toMatch(/\)\)\.LocalNotifications/); // (await import(...)).LocalNotifications
     expect(service).toMatch(/const \{ LocalNotifications \} = await import\(/);
     expect(service).not.toMatch(/return LocalNotifications|=> LocalNotifications/);

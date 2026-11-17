@@ -5,6 +5,7 @@ import {
   WritingClock, Writing, buildDraft, buildFinished, clockStarted, clockStopAt, clockStopped, countWords, elapsedOf,
   remainingOf, writingFromDraft,
 } from '../utils/redacao';
+import { cancelRedacaoEnd, scheduleRedacaoEnd } from '../services/redacaoAlert';
 import { useAppPause } from './useAppPause';
 import { useKeepAwake } from './useKeepAwake';
 
@@ -109,6 +110,15 @@ export function useRedacaoWriter({ theme, paper, resume, isDevMode, onSaveDraft,
   }, [running]);
 
   useKeepAwake(running);
+
+  // Aviso de fim do tempo (notificação agendada, para o caso de a tela estar bloqueada): agendado enquanto o cronômetro
+  // corre, cancelado ao pausar, concluir ou sair. Se o app for encerrado com o cronômetro correndo, o aviso fica de
+  // propósito (o tempo real passou); ao voltar com um rascunho (cronômetro parado) este efeito o cancela.
+  useEffect(() => {
+    if (running) void scheduleRedacaoEnd(remainingOf(clockRef.current, Date.now()));
+    else void cancelRedacaoEnd();
+  }, [running]);
+  useEffect(() => () => { void cancelRedacaoEnd(); }, []);
 
   // Acabaram os 90 minutos: para o cronômetro e pede a avaliação.
   useEffect(() => {

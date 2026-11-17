@@ -114,12 +114,23 @@ function validateRedacao(row: unknown, i: number) {
   if (typeof row.text !== 'string') throw bad('texto');
 }
 
+function validateReview(row: unknown, i: number) {
+  const bad = (why: string) => new BackupError(`Revisão #${i + 1} inválida (${why}).`);
+  if (!isObject(row)) throw bad('formato');
+  if (typeof row.id !== 'string' || !row.id) throw bad('sem id');
+  if (typeof row.subjectId !== 'string') throw bad('sem matéria');
+  if (typeof row.subtopic !== 'string') throw bad('sem subtópico');
+  if (typeof row.nextReviewAt !== 'number') throw bad('sem data');
+  if (typeof row.intervalIndex !== 'number') throw bad('intervalo');
+}
+
 const ROW_VALIDATORS: Record<string, (row: unknown, i: number) => void> = {
   subjects: validateSubject,
   blockLogs: validateBlockLog,
   settings: validateSetting,
   simuladoRecords: validateSimulado,
   redacaoSessions: validateRedacao,
+  reviewItems: validateReview,
 };
 
 /** Lê e valida o texto de um arquivo de backup. Lança `BackupError` se não servir. */

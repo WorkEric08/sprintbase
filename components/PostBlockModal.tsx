@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BlockLog, PostBlockData, SelfScore } from '../types';
+import { BANCAS, BlockLog, PostBlockData, SelfScore } from '../types';
 import Icon from './Icon';
 
 interface Props {
@@ -9,6 +9,8 @@ interface Props {
   subjectColor: string;
   /** Registros existentes — usados só para sugerir subtópicos já digitados. */
   blockLogs: BlockLog[];
+  /** Banca que já vem marcada (a banca alvo, se houver). */
+  defaultBanca?: string | null;
   onSubmit: (data: PostBlockData) => void;
   onSkip: () => void;
 }
@@ -23,11 +25,13 @@ const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase
 const STEP_BTN =
   'w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 disabled:opacity-30 active:scale-90 transition-transform';
 
-const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor, blockLogs, onSubmit, onSkip }) => {
+const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor, blockLogs, defaultBanca = null, onSubmit, onSkip }) => {
   const [selfScore, setSelfScore] = useState<SelfScore>(3);
   const [questionsTotal, setQuestionsTotal] = useState(0);
   const [questionsCorrect, setQuestionsCorrect] = useState(0);
   const [subtopic, setSubtopic] = useState('');
+  const [banca, setBanca] = useState<string | null>(defaultBanca);
+  const [flagged, setFlagged] = useState(false);
 
   // Subtópicos já usados nesta matéria, para sugestão rápida.
   const suggestions = useMemo(() => {
@@ -49,7 +53,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
   const wrong = questionsTotal - questionsCorrect;
 
   const handleSubmit = () =>
-    onSubmit({ questionsTotal, questionsCorrect, subtopic: subtopic.trim(), selfScore });
+    onSubmit({ questionsTotal, questionsCorrect, subtopic: subtopic.trim(), selfScore, banca, flaggedForReview: flagged });
 
   return createPortal(
     <div className="fixed inset-0 z-[80] flex flex-col justify-end md:justify-center md:items-center md:p-6 animate-fade-in">
@@ -173,6 +177,55 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
               </div>
             )}
           </div>
+
+          {/* Banca (opcional): alimenta o desempenho por banca em Progresso */}
+          <div className="space-y-2">
+            <span className={LABEL}>
+              Banca <span className="font-normal normal-case tracking-normal opacity-60">(opcional)</span>
+            </span>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Banca">
+              {BANCAS.map(b => (
+                <button
+                  key={b}
+                  onClick={() => setBanca(banca === b ? null : b)}
+                  aria-pressed={banca === b}
+                  className={`px-3 py-1.5 rounded-full border text-[11px] font-bold transition-all active:scale-95 ${
+                    banca === b
+                      ? 'border-transparent text-white'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40'
+                  }`}
+                  style={banca === b ? { backgroundColor: subjectColor } : undefined}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Revisão espaçada: o subtópico volta em D+1, 3, 7, 15, 30 e 60 dias */}
+          <button
+            onClick={() => setFlagged(f => !f)}
+            role="switch"
+            aria-checked={flagged}
+            className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left transition-all active:scale-[0.99] ${
+              flagged
+                ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10'
+                : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40'
+            }`}
+          >
+            <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${flagged ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+              <Icon name="bookmark" className="text-sm" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-xs font-black text-gray-700 dark:text-gray-200 uppercase tracking-tight">Marcar pra revisar</span>
+              <span className="block text-[11px] text-gray-500 dark:text-gray-400 leading-snug mt-0.5">
+                {subtopic.trim() ? `Revisar "${subtopic.trim()}"` : 'Sem subtópico, a revisão fica como "(geral)"'} amanhã, e de novo em 3, 7, 15, 30 e 60 dias.
+              </span>
+            </span>
+            <span className={`relative w-11 h-6 rounded-full shrink-0 transition-colors ${flagged ? 'bg-amber-500' : 'bg-gray-200 dark:bg-gray-700'}`}>
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${flagged ? 'translate-x-5' : ''}`} />
+            </span>
+          </button>
 
           <button
             onClick={handleSubmit}

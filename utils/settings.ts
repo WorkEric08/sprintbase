@@ -9,6 +9,10 @@ export const SETTING_KEYS = {
   calendarGoal: 'calendar_goal',     // JSON {min, max}
   dayNotes: 'day_notes',             // JSON { 'YYYY-MM-DD': 'texto' }
   welcomeBackShown: 'welcome_back_shown', // 'YYYY-MM-DD' do último "bem-vindo de volta"
+  examDate: 'exam_date',             // 'YYYY-MM-DD' da prova
+  selectedEdital: 'selected_edital_id', // 'enem' | 'custom' (ausente = nenhum)
+  customEdital: 'custom_edital',     // JSON { name, subjects: [{ name, color }] }
+  targetBanca: 'target_banca',       // uma das BANCAS (ausente = nenhuma)
   completedRedacaoThemes: 'completed_redacao_themes', // JSON ['enem-2022', ...]: temas de redação já feitos
   simuladoActive: 'simulado_active',      // JSON da sessão do simulado em andamento (ver utils/simulado.ts)
 } as const;

@@ -1302,6 +1302,7 @@ async function main() {
     group('Redação');
     await check('a aba Redação lista os temas, com busca, filtro por eixo e o aviso "A conferir" nos do ENEM', async () => {
       await idb('redacaoSessions', 'clear');
+      await idb('simuladoRecords', 'clear'); // sem simulados: as redações precisam carregar do mesmo jeito
       await idb('settings', 'delete', 'completed_redacao_themes');
       await reload();
       await openRedacao();
@@ -1470,6 +1471,8 @@ async function main() {
       await click('Histórico de redações');
       await waitText('Média (últimas 3)');
       assert(await hasText('Melhor nota'), 'melhor nota ausente');
+      assert(await page.$('[data-testid="redacao-competencias"]'), 'cartão "Por competência" ausente');
+      assert(await hasText('Seu ponto fraco é C5'), 'o ponto fraco devia ser C5 (média 110/200)');
       assert(await page.$('svg[aria-label="Evolução da nota nas redações"]'), 'gráfico ausente');
       const dots = await page.$$eval('svg[aria-label="Evolução da nota nas redações"] [role="button"]', e => e.length);
       assert(dots === 4, `esperava 4 pontos (3 injetadas + a de 640), veio ${dots}`); // 640 do teste anterior
@@ -1520,6 +1523,286 @@ async function main() {
       await target.pressBack();
       await click('Sair e guardar rascunho');
       await waitFor(async () => !(await writerOpen()), 'sair da escrita');
+    });
+  }
+
+  // ── Edital, revisão espaçada e banca ──
+  if (!isAndroid) {
+    const DAY = 86_400_000;
+    const midnightOf = ts => { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); };
+    const reviewRows = () => idb('reviewItems', 'all');
+    const subjectRows = () => idb('subjects', 'all');
+    const openAjustes = async () => { await click('Ajustes'); await waitText('Seu nome'); };
+    const makeDue = async () => {
+      for (const r of await reviewRows()) {
+        if (!r.consolidated) await idb('reviewItems', 'put', { ...r, nextReviewAt: midnightOf(Date.now()) - DAY });
+      }
+    };
+    /** Monta e inicia um sprint com 1 bloco rápido e (opcional) a pausa de revisão adicionada pelo aviso. */
+    const buildSprint = async ({ withReview }) => {
+      await click('Ciclo');
+      await click('Montar sprint');
+      await waitText('Sprint vazio');
+      await click('e2e rev');
+      if (withReview) { await waitFor(async () => (await page.$('[data-testid="review-banner"]')) !== null, 'banner de revisões pendentes'); await click('Adicionar', { exact: true }); await waitFor(() => page.$('button[aria-label="Remover pausa de revisão"]'), 'pausa de revisão na fila'); }
+      await click('Iniciar ·');
+      await waitText('restantes');
+    };
+
+    group('Edital, revisão e banca');
+    await check('Ajustes · Prova: sem edital, sem data e sem banca alvo no começo', async () => {
+      await idb('subjects', 'clear'); await idb('blockLogs', 'clear'); await idb('reviewItems', 'clear');
+      for (const k of ['exam_date', 'selected_edital_id', 'custom_edital', 'target_banca']) await idb('settings', 'delete', k);
+      await reload();
+      await openAjustes();
+      await waitText('Prova');
+      assert(await page.$eval('[data-testid="edital-value"]', e => e.textContent.includes('Nenhum')), 'o edital devia começar em "Nenhum"');
+      assert(await page.$eval('[data-testid="exam-date-value"]', e => e.textContent.includes('Não definida')), 'a data devia começar "Não definida"');
+      assert(await noHorizontalScroll(), 'rolagem horizontal em Ajustes');
+    });
+    await check('ENEM: a confirmação lista as 6 matérias que serão criadas; aplicar cria e LIGA cada uma ao edital (editalKey)', async () => {
+      await click('Edital');
+      await click('ENEM');
+      await waitText('6 matérias serão criadas');
+      assert(await hasText('Matemática') && await hasText('será criada'), 'lista das matérias ausente');
+      await click('Aplicar ENEM');
+      await waitFor(async () => (await page.$eval('[data-testid="edital-value"]', e => e.textContent)) === 'ENEM', 'edital ENEM ativo');
+      const subs = await subjectRows();
+      assert(subs.length === 6 && subs.every(s => s.editalKey === s.title && s.duration === 50), 'matérias do ENEM não foram criadas e ligadas');
+      assert(subs.find(s => s.title === 'Matemática').blockCount === 10, 'meta de blocos de Matemática (mínimo 10)');
+    });
+    await check('renomear uma matéria NÃO quebra a cobertura do edital (cruza pela chave, não pelo nome)', async () => {
+      const mat = (await subjectRows()).find(s => s.editalKey === 'Matemática');
+      await idb('subjects', 'put', { ...mat, title: 'Mat', completedBlocks: [{ timestamp: Date.now(), type: 'study' }] });
+      await reload();
+      await click('Progresso');
+      await waitFor(async () => (await page.$('[data-testid="edital-coverage"]')) !== null, 'cartão do edital');
+      assert(await hasText('Edital coberto') && await hasText('17%'), 'cobertura devia ser 1 de 6 matérias (17%)');
+      await click('Ver por matéria');
+      await waitText('No Ciclo: Mat');
+      const covered = await page.$$eval('[data-testid="coverage-row"][data-covered="true"]', e => e.length);
+      assert(covered === 1, `esperava 1 matéria coberta, veio ${covered}`);
+    });
+    await check('aplicar o ENEM de novo não duplica matérias (a renomeada continua ligada)', async () => {
+      await openAjustes();
+      await click('Edital');
+      await click('ENEM');
+      await waitText('Todas as matérias já existem');
+      await click('Aplicar ENEM');
+      await waitFor(async () => (await subjectRows()).length === 6, 'continuar com 6 matérias');
+      assert((await subjectRows()).filter(s => s.title === 'Matemática').length === 0, 'recriou a matéria renomeada');
+    });
+    await check('edital personalizado: nome e matérias próprias, duplicada recusada, criadas no Ciclo e ligadas', async () => {
+      await click('Edital');
+      await click('Seu edital');
+      await typeInto('Ex.: OAB', 'OAB');
+      await typeInto('Nome da matéria', 'Ética');
+      await click('Adicionar matéria');
+      await typeInto('Nome da matéria', 'ética');
+      assert(await hasText('Matéria já adicionada'), 'devia recusar matéria duplicada (sem diferenciar maiúsculas)');
+      await typeInto('Nome da matéria', 'Civil');
+      await click('Adicionar matéria');
+      assert((await page.$$('[data-testid="custom-subject"]')).length === 2, 'esperava 2 matérias no edital personalizado');
+      await click('Salvar e aplicar');
+      await waitFor(async () => (await page.$eval('[data-testid="edital-value"]', e => e.textContent)) === 'OAB', 'edital OAB ativo');
+      const subs = await subjectRows();
+      assert(subs.length === 8 && subs.filter(s => s.editalKey === 'Ética' || s.editalKey === 'Civil').length === 2, 'matérias do edital personalizado não criadas');
+      assert(subs.find(s => s.editalKey === 'Civil').blockCount === 20, 'meta do personalizado devia ser 20 blocos');
+      const saved = JSON.parse((await idb('settings', 'get', 'custom_edital')).value);
+      assert(saved.name === 'OAB' && saved.subjects.length === 2, 'edital personalizado não foi gravado');
+    });
+    await check('data da prova: seletor próprio (sem input nativo), contagem regressiva no Ciclo, persiste e pode ser limpa', async () => {
+      assert((await page.$('input[type="date"]')) === null, 'não pode haver <input type="date">');
+      await click('Data da prova');
+      await waitFor(async () => (await page.$('[data-testid="datepicker-month"]')) !== null, 'calendário');
+      assert(await page.$('[role="dialog"][aria-label="Escolher data"]'), 'seletor de data ausente');
+      await click('Próximo mês');
+      await click('15 de ');
+      await waitFor(async () => !(await page.$('[role="dialog"][aria-label="Escolher data"]')), 'fechar o seletor');
+      const saved = (await idb('settings', 'get', 'exam_date')).value;
+      assert(/^\d{4}-\d{2}-15$/.test(saved), `data gravada incorreta: ${saved}`);
+      await waitText('faltam');
+      await click('Ciclo');
+      await waitFor(async () => (await page.$('[data-testid="countdown"]')) !== null, 'contagem regressiva no Ciclo');
+      assert(await hasText('dias') || await hasText('dia'), 'a contagem devia mostrar os dias');
+      assert(await hasText('OAB'), 'a contagem devia mostrar o nome do edital');
+      await reload();
+      assert((await page.$('[data-testid="countdown"]')) !== null, 'a contagem sumiu depois de recarregar');
+    });
+    await check('prova que já passou mostra "Prova encerrada"; "Limpar" remove a contagem', async () => {
+      await click('Ajustes');
+      await click('Data da prova');
+      await click('Mês anterior'); await click('Mês anterior');
+      await click('10 de ');
+      await click('Ciclo');
+      await waitText('Prova encerrada');
+      await click('Atualizar data');
+      await waitFor(async () => (await page.$('[role="dialog"][aria-label="Escolher data"]')) !== null, 'seletor de data');
+      await click('Limpar');
+      await waitGone('Prova encerrada');
+      assert(!(await idb('settings', 'get', 'exam_date')), 'a data devia ter sido removida');
+    });
+    await check('banca alvo: escolher marca, tocar de novo desmarca', async () => {
+      await openAjustes();
+      await click('FGV', { exact: true });
+      assert((await idb('settings', 'get', 'target_banca')).value === 'FGV', 'banca alvo não gravada');
+      await click('FGV', { exact: true });
+      assert(!(await idb('settings', 'get', 'target_banca')), 'a banca alvo devia ter sido removida');
+      await click('FGV', { exact: true });
+    });
+
+    // ── O ciclo completo da revisão espaçada, pela tela ──
+    await check('"Marcar pra revisar" no registro do bloco: cria a revisão em D+1 e grava a banca (a banca alvo já vem marcada)', async () => {
+      await idb('subjects', 'clear');
+      await injectSubject({ id: 'e2e-rev', title: 'E2E Rev', color: '#10b981', duration: 0.05, blockCount: 30, completedBlocks: [], createdAt: Date.now() });
+      await reload();
+      await buildSprint({ withReview: false });
+      await waitText('Marcar pra revisar', 9000);
+      assert(await page.$eval('[role="group"][aria-label="Banca"] [aria-pressed="true"]', e => e.textContent.trim()) === 'FGV', 'a banca alvo devia vir marcada');
+      await typeInto('Ex.: Funções', 'Funções');
+      await click('Marcar pra revisar');
+      assert(await hasText('amanhã, e de novo em 3, 7, 15, 30 e 60 dias'), 'o aviso do ciclo de revisão ausente');
+      await click('Salvar registro');
+      await waitFor(async () => (await reviewRows()).length === 1, 'revisão criada');
+      const [item] = await reviewRows();
+      assert(item.subtopic === 'Funções' && item.intervalIndex === 0 && item.consolidated === false, 'revisão incorreta');
+      assert(item.nextReviewAt === midnightOf(Date.now() + DAY), 'a primeira revisão devia ser amanhã à meia-noite (D+1)');
+      const logs = await idb('blockLogs', 'all');
+      assert(logs.some(l => l.flaggedForReview === true && l.banca === 'FGV' && l.subtopic === 'Funções'), 'o registro devia ter a banca e a marca de revisão');
+    });
+    await check('ainda não venceu: Montar sprint NÃO mostra o banner de revisões', async () => {
+      await waitFor(async () => !(await page.$('[data-testid="sprint-runner"]')), 'sprint terminar', 6000);
+      await click('Montar sprint');
+      await waitText('Sprint vazio');
+      assert((await page.$('[data-testid="review-banner"]')) === null, 'o banner não devia aparecer antes do dia da revisão');
+      await target.pressBack();
+    });
+
+    const STEPS = [['D+1', 'D+3'], ['D+3', 'D+7'], ['D+7', 'D+15'], ['D+15', 'D+30'], ['D+30', 'D+60'], ['D+60', 'Consolidado']];
+    for (const [i, [from, to]] of STEPS.entries()) {
+      await check(`revisão ${i + 1} de 6: ${from} → ${to === 'Consolidado' ? 'consolidada' : to} (banner, pausa de revisão e "Acertei")`, async () => {
+        await makeDue();
+        await reload();
+        await buildSprint({ withReview: true });
+        await click('Pular →'); // modo dev: pular conta o bloco e segue para a pausa de revisão
+        await waitFor(async () => (await page.$('[data-testid="review-list"]')) !== null, 'lista da pausa de revisão');
+        assert(await hasText('Pausa de revisão'), 'a pausa devia se chamar "Pausa de revisão"');
+        assert(await hasText('Funções') && await hasText(from.toLowerCase()), `devia listar "Funções" em ${from}`);
+        await click('Acertei: Funções');
+        await waitText(to === 'Consolidado' ? 'Acertou · consolidado!' : `Acertou · volta em ${to}`);
+        const [item] = await reviewRows();
+        assert(item.intervalIndex === i + 1, `intervalIndex devia ser ${i + 1}, veio ${item.intervalIndex}`);
+        assert(item.consolidated === (i === STEPS.length - 1), 'consolidação incorreta');
+        if (!item.consolidated) assert(item.nextReviewAt > Date.now(), 'a próxima revisão devia ser no futuro');
+        await click('Pular pausa');
+        await waitFor(async () => !(await page.$('[data-testid="sprint-runner"]')), 'sprint terminar', 6000);
+      });
+    }
+    await check('consolidada: sai da fila (sem banner), e Progresso mostra "1 dominada"', async () => {
+      await reload();
+      await click('Montar sprint');
+      await waitText('Sprint vazio');
+      assert((await page.$('[data-testid="review-banner"]')) === null, 'revisão consolidada não pode voltar à fila');
+      await target.pressBack();
+      await click('Progresso');
+      await waitFor(async () => (await page.$('[data-testid="review-status"]')) !== null, 'cartão da revisão espaçada');
+      assert(await hasText('Nada pendente hoje') && await hasText('Dominadas'), 'o cartão devia dizer que nada está pendente e mostrar as dominadas');
+      await click('Revisão espaçada');
+      await click('Dominadas · 1');
+      await waitText('dominada');
+    });
+    await check('errar na revisão volta para D+1 (não avança)', async () => {
+      const [item] = await reviewRows();
+      await idb('reviewItems', 'put', { ...item, consolidated: false, intervalIndex: 3, nextReviewAt: midnightOf(Date.now()) - DAY });
+      await reload();
+      await buildSprint({ withReview: true });
+      await click('Pular →');
+      await waitFor(async () => (await page.$('[data-testid="review-list"]')) !== null, 'lista da revisão');
+      assert(await hasText('atrasada 1 dia'), 'a revisão atrasada devia avisar o atraso');
+      await click('Errei: Funções');
+      await waitText('Errou · volta amanhã (D+1)');
+      const [after] = await reviewRows();
+      assert(after.intervalIndex === 0 && after.consolidated === false && after.nextReviewAt === midnightOf(Date.now() + DAY), 'errar devia voltar para o D+1');
+      await click('Pular pausa');
+      await waitFor(async () => !(await page.$('[data-testid="sprint-runner"]')), 'sprint terminar', 6000);
+    });
+    await check('marcar de novo o mesmo subtópico (mesmo com outra caixa) reinicia no D+1 sem duplicar', async () => {
+      const [item] = await reviewRows();
+      await idb('reviewItems', 'put', { ...item, intervalIndex: 4, nextReviewAt: midnightOf(Date.now()) + 30 * DAY });
+      await reload();
+      await buildSprint({ withReview: false });
+      await waitText('Marcar pra revisar', 9000);
+      await typeInto('Ex.: Funções', ' funções ');
+      await click('Marcar pra revisar');
+      await click('Salvar registro');
+      await waitFor(async () => (await reviewRows())[0].intervalIndex === 0, 'revisão reiniciada');
+      assert((await reviewRows()).length === 1, 'não devia duplicar a revisão');
+      await waitFor(async () => !(await page.$('[data-testid="sprint-runner"]')), 'sprint terminar', 6000);
+    });
+    await check('excluir a matéria exclui as revisões dela (não ficam pendentes sem poder ser feitas)', async () => {
+      assert((await reviewRows()).length === 1, 'devia haver 1 revisão antes');
+      await click('Ciclo');
+      await click('Excluir matéria', { nth: 0 });
+      await waitText('Excluir matéria?');
+      await click('Sim, excluir matéria');
+      await waitFor(async () => (await reviewRows()).length === 0, 'revisões da matéria excluídas');
+    });
+
+    // ── Pontos fortes/fracos, banca e cobertura com dados ──
+    await check('Progresso: pontos fortes e fracos por subtópico e desempenho por banca (com banca alvo)', async () => {
+      await idb('subjects', 'clear');
+      await injectSubject({ id: 'e2e-p', title: 'Português', color: '#8b5cf6', duration: 25, blockCount: 10, completedBlocks: [], createdAt: Date.now() });
+      await idb('blockLogs', 'clear');
+      const mk = (id, subtopic, total, correct, banca) => ({
+        id, subjectId: 'e2e-p', subjectTitle: 'Português', subjectColor: '#8b5cf6', timestamp: Date.now(), questionsTotal: total,
+        questionsCorrect: correct, subtopic, selfScore: 3, flaggedForReview: false, blockType: 'study', ...(banca ? { banca } : {}),
+      });
+      await idb('blockLogs', 'put', mk('b1', 'Crase', 10, 9, 'FGV'));
+      await idb('blockLogs', 'put', mk('b2', 'Regência', 10, 3, 'FGV'));
+      await idb('blockLogs', 'put', mk('b3', 'Pontuação', 40, 24, 'FGV'));
+      await idb('blockLogs', 'put', mk('b4', 'Poucas', 2, 0, 'FCC'));
+      await reload();
+      await click('Progresso');
+      await waitFor(async () => (await page.$('[data-testid="strong-points"]')) !== null, 'pontos fortes');
+      const strong = await page.$eval('[data-testid="strong-points"]', e => e.textContent);
+      const weak = await page.$eval('[data-testid="weak-points"]', e => e.textContent);
+      assert(strong.includes('Crase') && strong.includes('90%') && !strong.includes('Pontuação'), 'ponto forte: só Crase (90%); Pontuação tem 60%');
+      assert(weak.indexOf('Regência') < weak.indexOf('Pontuação') && weak.includes('30%') && weak.includes('60%') && !weak.includes('Crase'), 'pontos fracos fora de ordem ou com Crase');
+      assert(!strong.includes('Poucas') && !weak.includes('Poucas'), '"Poucas" tem menos de 3 questões e não devia entrar');
+      await waitFor(async () => (await page.$('[data-testid="banca-card"]')) !== null, 'cartão de banca');
+      const banca = await page.$eval('[data-testid="banca-card"]', e => e.textContent);
+      assert(banca.includes('FGV') && banca.includes('1 banca') && banca.includes('Banca alvo: FGV'), 'cartão da banca incompleto');
+      assert(banca.includes('60% de acerto') && banca.includes('60 questões'), 'acerto da FGV (36 de 60 = 60%) ausente');
+      assert(!banca.includes('FCC'), 'FCC tem menos de 50 questões e não devia aparecer');
+      assert(await noHorizontalScroll(), 'rolagem horizontal em Progresso');
+    });
+    await check('banca alvo sem dados suficientes avisa quanto falta', async () => {
+      await idb('settings', 'put', { key: 'target_banca', value: 'FCC' });
+      await reload();
+      await click('Progresso');
+      await waitText('Ainda sem dados suficientes: 2 de 50 questões registradas');
+      await idb('settings', 'put', { key: 'target_banca', value: 'FGV' });
+    });
+    await check('telas da prova sem rolagem lateral em 320, 360 e 390 px (Ajustes, escolha de edital, builder com revisão)', async () => {
+      const m = midnightOf(Date.now()) - DAY;
+      await idb('reviewItems', 'put', { id: 'e2e-lay', subjectId: 'e2e-p', subjectTitle: 'Português', subjectColor: '#8b5cf6', subtopic: 'Um subtópico com um nome bem comprido para testar a quebra de linha', createdAt: m, lastReviewedAt: null, nextReviewAt: m, intervalIndex: 2, consolidated: false, reviewCount: 2 });
+      await reload();
+      for (const [w, h] of [[320, 568], [360, 640], [390, 844]]) {
+        await page.setViewport({ width: w, height: h, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+        await sleep(300);
+        await click('Ajustes');
+        await click('Edital');
+        await waitText('Matriz de Referência');
+        assert(await noHorizontalScroll(), `rolagem horizontal na escolha de edital a ${w}px`);
+        await target.pressBack();
+        assert(await noHorizontalScroll(), `rolagem horizontal em Ajustes a ${w}px`);
+        await click('Ciclo');
+        await click('Montar sprint');
+        await waitFor(async () => (await page.$('[data-testid="review-banner"]')) !== null, 'banner');
+        assert(await noHorizontalScroll(), `rolagem horizontal no Montar sprint a ${w}px`);
+        await target.pressBack();
+      }
+      await page.setViewport(MOBILE);
     });
   }
 

@@ -1,75 +1,58 @@
 import React from 'react';
 import {
   IconDefinition,
-  faArrowLeft, faArrowTrendDown, faArrowTrendUp, faArrowsRotate, faBell, faBellSlash, faBolt, faBookOpen, faBullseye,
-  faChartLine, faCheck, faChevronDown, faChevronUp, faCircleCheck, faCircleExclamation, faCircleInfo, faClock,
-  faClockRotateLeft, faDownload, faFaceSmile, faFileExport, faFileImport, faFire, faFileLines, faFlask, faGear, faHeart,
-  faHourglassHalf, faLaptop, faListCheck, faListUl, faLock, faMagnifyingGlass, faMinus, faMoon, faMugHot, faPalette, faPause, faPen, faPencil, faPlay, faPlus,
-  faRotate, faRotateLeft, faStar, faStopwatch, faSun, faTrash, faTriangleExclamation, faUser, faXmark,
+  faBookOpen, faCalendarDays, faChartLine, faChevronDown, faChevronUp, faCircleInfo, faFaceSmile, faFire,
+  faFlagCheckered, faGear, faHeart, faListUl, faPen, faPencil, faPlus, faRotate, faRotateLeft, faStopwatch, faTrash,
+  faTriangleExclamation, faUser,
 } from '@fortawesome/free-solid-svg-icons';
+import type { EXTRA_ICONS } from './iconsExtra';
 
 /**
  * Ícones como SVG embutido (só os que o app usa), no lugar da fonte do Font Awesome.
  *
  * Por quê: a fonte inteira (~155 KB) e o CSS do Font Awesome (~100 KB, com milhares de ícones) precisavam ser
  * lidos e interpretados antes de qualquer ícone aparecer. Com SVG, os ícones já nascem no primeiro desenho.
- * Para usar um ícone novo, importe-o acima e registre-o em ICONS: nomes que não existem não compilam.
+ *
+ * Dois grupos. O CORE (aqui) são os ícones que o primeiro quadro usa: Ciclo, barra de abas, ofensiva, contagem da
+ * prova e os diálogos de confirmação do Ciclo. Cada ícone a mais no arquivo principal é código que o aparelho lê e
+ * compila antes de pintar. Os demais ficam em iconsExtra.ts e chegam junto com as telas que os usam.
+ * Para usar um ícone novo: se ele aparece na tela inicial, registre-o abaixo; senão, em iconsExtra.ts.
+ * Nomes que não existem não compilam.
  */
-const ICONS = {
-  'arrow-left': faArrowLeft,
-  'arrow-trend-down': faArrowTrendDown,
-  'arrow-trend-up': faArrowTrendUp,
-  'arrows-rotate': faArrowsRotate,
-  bell: faBell,
-  'bell-slash': faBellSlash,
-  bolt: faBolt,
+const CORE = {
   'book-open': faBookOpen,
-  bullseye: faBullseye,
+  'calendar-days': faCalendarDays,
   'chart-line': faChartLine,
-  check: faCheck,
   'chevron-down': faChevronDown,
   'chevron-up': faChevronUp,
-  'circle-check': faCircleCheck,
-  'circle-exclamation': faCircleExclamation,
   'circle-info': faCircleInfo,
-  clock: faClock,
-  'clock-rotate-left': faClockRotateLeft,
-  download: faDownload,
   'face-smile': faFaceSmile,
-  'file-export': faFileExport,
-  'file-import': faFileImport,
   fire: faFire,
-  'file-lines': faFileLines,
-  flask: faFlask,
+  'flag-checkered': faFlagCheckered,
   gear: faGear,
   heart: faHeart,
-  'hourglass-half': faHourglassHalf,
-  laptop: faLaptop,
-  'list-check': faListCheck,
   'list-ul': faListUl,
-  lock: faLock,
-  'magnifying-glass': faMagnifyingGlass,
-  minus: faMinus,
-  moon: faMoon,
-  'mug-hot': faMugHot,
-  palette: faPalette,
-  pause: faPause,
   pen: faPen,
   pencil: faPencil,
-  play: faPlay,
   plus: faPlus,
   rotate: faRotate,
   'rotate-left': faRotateLeft,
-  star: faStar,
   stopwatch: faStopwatch,
-  sun: faSun,
-  times: faXmark,
   trash: faTrash,
   'triangle-exclamation': faTriangleExclamation,
   user: faUser,
 } satisfies Record<string, IconDefinition>;
 
-export type IconName = keyof typeof ICONS;
+export const CORE_ICON_NAMES = Object.keys(CORE);
+
+const registry = new Map<string, IconDefinition>(Object.entries(CORE));
+
+/** Registra mais ícones (chamado por iconsExtra.ts ao carregar). */
+export function registerIcons(icons: Record<string, IconDefinition>) {
+  for (const [name, def] of Object.entries(icons)) registry.set(name, def);
+}
+
+export type IconName = keyof typeof CORE | keyof typeof EXTRA_ICONS;
 
 interface Props {
   name: IconName;
@@ -78,7 +61,13 @@ interface Props {
 }
 
 const Icon: React.FC<Props> = ({ name, className }) => {
-  const [width, height, , , path] = ICONS[name].icon;
+  const def = registry.get(name);
+  if (!def) {
+    // Um ícone extra pedido antes de as telas carregarem seus ícones: nunca deveria acontecer (utils/icons.test.ts).
+    console.error(`Ícone "${name}" não registrado: ele precisa estar no CORE de Icon.tsx`);
+    return null;
+  }
+  const [width, height, , , path] = def.icon;
   return (
     <svg
       aria-hidden="true"

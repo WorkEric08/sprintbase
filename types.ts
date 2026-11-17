@@ -39,6 +39,12 @@ export interface Subject {
   completedBlocks: CompletedBlock[];
   /** Mantém a ordem de criação (o original reordenava por id aleatório). Opcional p/ compatibilidade. */
   createdAt?: number;
+  /**
+   * Nome da matéria do edital a que esta matéria corresponde (definido ao aplicar o ENEM ou o edital personalizado).
+   * Renomear a matéria no app NÃO quebra a cobertura do edital, que cruza por esta chave e não pelo nome atual.
+   * Campo opcional, sem índice: não muda o schema do banco.
+   */
+  editalKey?: string;
 }
 
 export type SubjectInput = Pick<Subject, 'title' | 'color' | 'duration' | 'blockCount'>;
@@ -52,6 +58,10 @@ export interface PostBlockData {
   questionsCorrect: number;
   subtopic: string;
   selfScore: SelfScore;
+  /** Banca das questões (opcional). */
+  banca?: string | null;
+  /** "Marcar pra revisar": cria (ou reinicia) a revisão espaçada deste subtópico. */
+  flaggedForReview?: boolean;
 }
 
 export interface BlockLog {
@@ -64,10 +74,10 @@ export interface BlockLog {
   questionsCorrect: number;
   subtopic: string;
   selfScore: SelfScore;
-  /** Reservado p/ revisão espaçada (módulo futuro). Sempre false na base. */
+  /** Marcado para revisão espaçada neste registro. */
   flaggedForReview: boolean;
   blockType: BlockType;
-  /** Reservado p/ desempenho por banca (módulo futuro). */
+  /** Banca das questões deste bloco. */
   banca?: string;
 }
 
@@ -92,7 +102,9 @@ export interface StreakState {
 
 export type SprintItem =
   | { id: string; type: 'study'; subjectId: string; blockType: BlockType }
-  | { id: string; type: 'break'; duration: number };
+  | { id: string; type: 'break'; duration: number }
+  /** Pausa que também serve para revisar: lista os subtópicos pendentes e registra se acertou ou errou. */
+  | { id: string; type: 'review-break'; duration: number };
 
 // ── Simulado ──────────────────────────────────────────────────────────────
 // Formato idêntico ao do app original (tabela `simuladoRecords`, v4 do banco): nada muda no schema.
@@ -207,4 +219,63 @@ export interface RedacaoSession {
   notes: string;
   /** Só rascunhos: tempo de escrita acumulado até o último salvamento, para o cronômetro voltar de onde parou. */
   elapsedMs?: number;
+}
+
+// ── Revisão espaçada ──────────────────────────────────────────────────────
+// Formato do app original (tabela `reviewItems`, v3 do banco).
+
+/** Intervalos em dias: D+1 → D+3 → D+7 → D+15 → D+30 → D+60 → consolidado. */
+export const REVIEW_INTERVALS = [1, 3, 7, 15, 30, 60] as const;
+
+export interface ReviewItem {
+  id: string;
+  subjectId: string;
+  subjectTitle: string;
+  subjectColor: string;
+  /** '(geral)' quando ficou em branco. */
+  subtopic: string;
+  createdAt: number;
+  lastReviewedAt: number | null;
+  /** Meia-noite local do dia da revisão. */
+  nextReviewAt: number;
+  /** 0–5: posição em REVIEW_INTERVALS. */
+  intervalIndex: number;
+  /** Passou do D+60. */
+  consolidated: boolean;
+  reviewCount: number;
+}
+
+// ── Banca ─────────────────────────────────────────────────────────────────
+
+export const BANCAS = [
+  'CESPE/CEBRASPE', 'FCC', 'FGV', 'VUNESP',
+  'IBFC', 'Quadrix', 'IADES', 'Outra',
+] as const;
+export type Banca = typeof BANCAS[number];
+
+// ── Edital ────────────────────────────────────────────────────────────────
+
+export interface EditalSubtopic {
+  name: string;
+  /** Incidência histórica nas últimas 5 provas (0–100). 0 = não medido. */
+  incidencia: number;
+}
+
+export interface EditalSubject {
+  name: string;
+  /** Peso relativo no edital (0–100). */
+  weight: number;
+  color: string;
+  subtopics: EditalSubtopic[];
+}
+
+export interface Edital {
+  id: string;
+  name: string;
+  organizer: string;
+  category: 'enem' | 'federal' | 'estadual' | 'municipal' | 'custom';
+  typicalMonth: string;
+  /** Aviso sobre a precisão dos dados. */
+  disclaimer: string;
+  subjects: EditalSubject[];
 }

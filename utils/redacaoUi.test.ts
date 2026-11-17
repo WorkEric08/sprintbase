@@ -84,4 +84,8 @@ describe('o texto de quem escreve', () => {
     expect(critical).not.toMatch(/redacaoSessions|simuladoRecords/);
     expect(ctx).toMatch(/await db\.redacaoSessions\.toArray\(\)/);
   });
+
+  it('os passos da carga em segundo plano não se pulam uns aos outros: nada de `return` por "não há dados" (bug real: sem simulados, as redações nunca carregavam)', () => {
+    expect(read('contexts/AppDataContext.tsx')).not.toMatch(/rows\.length === 0[^\n]*\) return/);
+  });
 });

@@ -2,19 +2,23 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { lazyScreen } from '../utils/lazyScreen';
 
+/** Cada tela carrega junto os ícones que o primeiro quadro não usa (components/iconsExtra.ts). */
+const withIcons = <T,>(load: Promise<T>) => Promise.all([load, import('./iconsExtra')]).then(([screen]) => screen);
+
 /**
  * Telas carregadas sob demanda. Só o Ciclo (a tela inicial) fica no primeiro arquivo do app.
  * Para tirar mais uma tela do caminho da inicialização, importe-a daqui em vez de direto.
  */
-export const ProgressView = lazyScreen(() => import('./ProgressView'));
-export const SettingsPanel = lazyScreen(() => import('./SettingsPanel'));
-export const SubjectFormView = lazyScreen(() => import('./SubjectFormView'));
-export const SprintBuilderView = lazyScreen(() => import('./SprintBuilderView'));
-export const SprintRunnerView = lazyScreen(() => import('./SprintRunnerView'));
-export const SimuladoView = lazyScreen(() => import('./SimuladoView'));
-export const RedacaoView = lazyScreen(() => import('./RedacaoView'));
+export const ProgressView = lazyScreen(() => withIcons(import('./ProgressView')));
+export const SettingsPanel = lazyScreen(() => withIcons(import('./SettingsPanel')));
+export const SubjectFormView = lazyScreen(() => withIcons(import('./SubjectFormView')));
+export const SprintBuilderView = lazyScreen(() => withIcons(import('./SprintBuilderView')));
+export const SprintRunnerView = lazyScreen(() => withIcons(import('./SprintRunnerView')));
+export const SimuladoView = lazyScreen(() => withIcons(import('./SimuladoView')));
+export const RedacaoView = lazyScreen(() => withIcons(import('./RedacaoView')));
+export const DatePickerModal = lazyScreen(() => withIcons(import('./DatePickerModal')));
 
-const ALL = [ProgressView, SettingsPanel, SubjectFormView, SprintBuilderView, SprintRunnerView, SimuladoView, RedacaoView];
+const ALL = [ProgressView, SettingsPanel, SubjectFormView, SprintBuilderView, SprintRunnerView, SimuladoView, RedacaoView, DatePickerModal];
 
 /**
  * Carrega todas as telas em segundo plano, quando o navegador está ocioso (logo depois da primeira pintura).

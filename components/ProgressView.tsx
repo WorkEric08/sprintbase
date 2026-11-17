@@ -2,9 +2,15 @@ import React, { useMemo, useState } from 'react';
 import { BLOCK_TYPES, BLOCK_TYPE_COLORS, BLOCK_TYPE_LABELS, BlockType } from '../types';
 import { useAppData } from '../contexts/AppDataContext';
 import { useStreak } from '../hooks/useStreak';
+import { resolveEdital } from '../utils/edital';
+import { SETTING_KEYS } from '../utils/settings';
 import { Period, formatMinutes, getPeriodStart } from '../utils/format';
 import HeatmapView from './HeatmapView';
+import BancaStatsCard from './BancaStatsCard';
+import EditalCoverageCard from './EditalCoverageCard';
+import ReviewStatusCard from './ReviewStatusCard';
 import SimuladoAreaCard from './SimuladoAreaCard';
+import SubtopicPointsCard from './SubtopicPointsCard';
 import StreakWidget from './StreakWidget';
 import Icon from './Icon';
 
@@ -26,7 +32,8 @@ function accuracyColor(pct: number | null): string {
 }
 
 const ProgressView: React.FC = () => {
-  const { subjects, blockLogs } = useAppData();
+  const { subjects, blockLogs, settings } = useAppData();
+  const edital = resolveEdital(settings[SETTING_KEYS.selectedEdital], settings[SETTING_KEYS.customEdital]);
   const { streak, enabled: streakEnabled } = useStreak();
   const [period, setPeriod] = useState<Period>('day');
 
@@ -212,7 +219,11 @@ const ProgressView: React.FC = () => {
         </div>
       )}
 
-      {/* Desempenho por área nos simulados (some sem simulados) */}
+      {/* Cartões que só aparecem quando há dados: revisão, subtópicos, banca, edital e simulados */}
+      <ReviewStatusCard />
+      <SubtopicPointsCard />
+      <BancaStatsCard />
+      {edital && <EditalCoverageCard edital={edital} />}
       <SimuladoAreaCard />
 
       {/* Calendário de estudos */}

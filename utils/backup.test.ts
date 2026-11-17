@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'; // precisa vir antes do import do db
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
-import type { BlockLog, RedacaoSession, SimuladoRecord, Subject } from '../types';
+import type { BlockLog, RedacaoSession, ReviewItem, SimuladoRecord, Subject } from '../types';
 import { SETTING_KEYS } from './settings';
 import {
   BACKUP_FORMAT, BACKUP_VERSION, BackupError, BackupFile,
@@ -33,6 +33,11 @@ const redacao = (over: Partial<RedacaoSession> = {}): RedacaoSession => ({
   id: 'red1', themeId: 'enem-2022', themeTitle: 'Tema', startedAt: 1000, lastSavedAt: 2000, completedAt: null,
   durationMinutes: 12, text: 'Texto com acentuação: coração, ação.', wordCount: 5, competencyScores: null, estimatedScore: null,
   notes: '', elapsedMs: 720000, ...over,
+});
+
+const review = (over: Partial<ReviewItem> = {}): ReviewItem => ({
+  id: 'rev1', subjectId: 's1', subjectTitle: 'Matemática', subjectColor: '#3b82f6', subtopic: 'Funções', createdAt: 1000,
+  lastReviewedAt: null, nextReviewAt: 86_400_000, intervalIndex: 2, consolidated: false, reviewCount: 2, ...over,
 });
 
 const valid = (tables: BackupFile['tables'] = {}): string =>
@@ -84,6 +89,19 @@ describe('createBackup / restoreBackup', () => {
     await restoreBackup(parseBackup(text));
     expect(await db.redacaoSessions.get('red1')).toEqual(redacao());
     expect((await db.redacaoSessions.get('red2'))?.estimatedScore).toBe(640);
+  });
+
+  it('as revisões espaçadas (com o ponto do ciclo em que estão) e a ligação das matérias com o edital entram no backup', async () => {
+    await db.reviewItems.bulkPut([review(), review({ id: 'rev2', consolidated: true, intervalIndex: 6 })]);
+    await db.subjects.put(subject({ editalKey: 'Matemática' }));
+    await db.settings.bulkPut([{ key: 'exam_date', value: '2026-11-22' }, { key: 'selected_edital_id', value: 'enem' }, { key: 'target_banca', value: 'FGV' }]);
+    const text = serializeBackup(await createBackup());
+    await wipe();
+    await restoreBackup(parseBackup(text));
+    expect(await db.reviewItems.get('rev1')).toEqual(review());
+    expect((await db.reviewItems.get('rev2'))?.consolidated).toBe(true);
+    expect((await db.subjects.get('s1'))?.editalKey).toBe('Matemática');
+    expect((await db.settings.get('target_banca'))?.value).toBe('FGV');
   });
 
   it('o simulado em ANDAMENTO não vai no backup (é do momento), mas o resto das configurações vai', async () => {
@@ -157,6 +175,11 @@ describe('parseBackup', () => {
   it('rejeita redação sem texto ou sem tema', () => {
     rejeita(valid({ redacaoSessions: [{ ...redacao(), text: undefined as never }] }), /Redação #1 inválida \(texto\)/);
     rejeita(valid({ redacaoSessions: [{ ...redacao(), themeId: undefined as never }] }), /Redação #1 inválida \(sem tema\)/);
+  });
+  it('rejeita revisão sem matéria, sem data ou sem intervalo', () => {
+    rejeita(valid({ reviewItems: [{ ...review(), subjectId: undefined as never }] }), /Revisão #1 inválida \(sem matéria\)/);
+    rejeita(valid({ reviewItems: [{ ...review(), nextReviewAt: 'amanhã' as never }] }), /Revisão #1 inválida \(sem data\)/);
+    rejeita(valid({ reviewItems: [{ ...review(), intervalIndex: undefined as never }] }), /Revisão #1 inválida \(intervalo\)/);
   });
   it('rejeita simulado sem id', () =>
     rejeita(valid({ simuladoRecords: [{ ...simulado(), id: '' }] }), /Simulado #1 inválido \(sem id\)/));

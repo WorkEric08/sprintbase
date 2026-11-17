@@ -17,12 +17,12 @@ describe('abertura rápida', () => {
 
   it('só o Ciclo vai no primeiro arquivo: as outras telas são carregadas sob demanda', () => {
     const screens = read('components/screens.tsx');
-    for (const name of ['ProgressView', 'SettingsPanel', 'SubjectFormView', 'SprintBuilderView', 'SprintRunnerView', 'SimuladoView', 'RedacaoView']) {
-      expect(screens, name).toMatch(new RegExp(`export const ${name} = lazyScreen\\(\\(\\) => import\\('./${name}'\\)\\)`));
+    for (const name of ['ProgressView', 'SettingsPanel', 'SubjectFormView', 'SprintBuilderView', 'SprintRunnerView', 'SimuladoView', 'RedacaoView', 'DatePickerModal']) {
+      expect(screens, name).toMatch(new RegExp(`export const ${name} = lazyScreen\\(\\(\\) => withIcons\\(import\\('./${name}'\\)\\)\\)`));
     }
     // ninguém importa essas telas direto (isso as traria de volta para o primeiro arquivo)
     const importers = read('App.tsx') + read('components/CicloView.tsx');
-    expect(importers).not.toMatch(/from '\.\/(components\/)?(ProgressView|SettingsPanel|SubjectFormView|SprintBuilderView|SprintRunnerView|SimuladoView|RedacaoView)'/);
+    expect(importers).not.toMatch(/from '\.\/(components\/)?(ProgressView|SettingsPanel|SubjectFormView|SprintBuilderView|SprintRunnerView|SimuladoView|RedacaoView|DatePickerModal)'/);
     expect(read('App.tsx')).toMatch(/import CicloView from '\.\/components\/CicloView'/);
   });
 

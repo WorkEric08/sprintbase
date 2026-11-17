@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SprintItem } from '../types';
+import { pendingItems } from '../utils/reviewAlgorithm';
 import { useAppData } from '../contexts/AppDataContext';
 import { isDevModeUser } from '../utils/devMode';
+import { SETTING_KEYS } from '../utils/settings';
 import BlockTimerView from './BlockTimerView';
 import BreakTimerView from './BreakTimerView';
 
@@ -21,7 +23,7 @@ interface Props {
  * à mostra por uns 200 ms.
  */
 const SprintRunnerView: React.FC<Props> = ({ items, onClose }) => {
-  const { subjects, blockLogs, userName, completeBlock, saveBlockLog } = useAppData();
+  const { subjects, blockLogs, userName, settings, reviewItems, completeBlock, saveBlockLog, reviewResult } = useAppData();
   const [index, setIndex] = useState(0);
 
   // O botão voltar é tratado por cada tela filha (cronômetro de bloco / pausa). O runner não
@@ -43,7 +45,7 @@ const SprintRunnerView: React.FC<Props> = ({ items, onClose }) => {
   }, [subjectMissing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   let screen: React.ReactNode = null;
-  if (current?.type === 'break') {
+  if (current?.type === 'break' || current?.type === 'review-break') {
     const nextStudy = items.slice(index + 1).find(i => i.type === 'study');
     const nextSubject = nextStudy?.type === 'study'
       ? subjects.find(s => s.id === nextStudy.subjectId) ?? null
@@ -53,9 +55,12 @@ const SprintRunnerView: React.FC<Props> = ({ items, onClose }) => {
         key={current.id}
         duration={current.duration}
         nextSubject={nextSubject}
-        breakIndex={items.slice(0, index + 1).filter(i => i.type === 'break').length}
-        totalBreaks={items.filter(i => i.type === 'break').length}
+        breakIndex={items.slice(0, index + 1).filter(i => i.type === 'break' || i.type === 'review-break').length}
+        totalBreaks={items.filter(i => i.type === 'break' || i.type === 'review-break').length}
         onDone={advance}
+        review={current.type === 'review-break'
+          ? { items: pendingItems(reviewItems, Date.now(), new Set(subjects.map(s => s.id))), onResult: reviewResult }
+          : undefined}
       />
     );
   } else if (current && subject) {
@@ -68,6 +73,7 @@ const SprintRunnerView: React.FC<Props> = ({ items, onClose }) => {
         cycleTotal={items.filter(i => i.type === 'study').length}
         blockLogs={blockLogs}
         isDevMode={isDevModeUser(userName)}
+        defaultBanca={settings[SETTING_KEYS.targetBanca] ?? null}
         onComplete={() => completeBlock(subject.id, current.blockType)}
         onSaveLog={data => saveBlockLog(subject.id, data, current.blockType)}
         onNext={advance}

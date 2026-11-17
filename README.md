@@ -77,13 +77,31 @@ O método gira em torno de três ideias:
 - Aba para treinar a redação do ENEM: **43 temas** (35 de treino e 8 de edições do ENEM) com busca, filtro por eixo e a categoria **Feitas**. Os temas do ENEM mostram **"A conferir"**: o título e o ano ainda não foram conferidos na fonte oficial (INEP), e essa conferência é manual.
 - Dois modos: **Escrever aqui** (editor em tela cheia) ou **Escrever no papel** (mostra o texto de apoio e conta o tempo enquanto você escreve à mão).
 - **Cronômetro de 90 minutos** sempre à vista, com pausa. A tela fica ligada enquanto ele corre. Acabou o tempo: a autoavaliação abre sozinha e o texto não se perde.
+- Um **aviso de fim do tempo** chega como notificação mesmo com a tela bloqueada (a permissão é a mesma do Simulado).
 - O texto é **salvo sozinho**: 5 segundos depois de parar de digitar, a cada 30 segundos com o cronômetro correndo e, principalmente, **no instante em que o app vai para segundo plano**, porque o Android pode encerrar o app sem avisar. Se isso acontecer, o **rascunho aparece** na aba Redação com o texto e o tempo já usado, e dá para continuar de onde parou.
 - Apoio durante a escrita: texto de apoio do tema, as 5 competências e um checklist. Contador de palavras (ideal: 150 a 500).
 - **Autoavaliação** ao concluir: as 5 competências do ENEM de 0 a 200, somando a nota (0 a 1000). Também dá para **salvar sem nota**.
-- **Histórico**: média das 3 últimas e melhor nota, gráfico de evolução e linha do tempo com o detalhe por competência e o texto. Excluir redação ou descartar rascunho pede confirmação e dá para **desfazer**.
+- **Histórico**: média das 3 últimas e melhor nota, gráfico de evolução, cartão **por competência** (a média de cada uma nas últimas 5 redações e o **ponto fraco**, com o que focar) e linha do tempo com o detalhe por competência e o texto. Excluir redação ou descartar rascunho pede confirmação e dá para **desfazer**.
+
+### Edital e prova
+- Em **Ajustes → Prova**: escolha o **edital** (**ENEM**, com as 6 matérias da Matriz de Referência, ou **Personalizado**, com as matérias que você nomear) e a **data da prova**.
+- Aplicar um edital **cria as matérias que faltam e liga as que já existem** (nada é apagado). A ligação é por uma chave própria, então **renomear uma matéria não quebra a cobertura**.
+- Com data definida, o **Ciclo** mostra a **contagem regressiva** (com marcos sugeridos para a fase em que você está) e avisa quando a prova já passou. O seletor de data é do próprio app.
+- Em **Progresso**, o cartão **Edital coberto** mostra quantas matérias do edital já têm blocos concluídos e, se o edital listar subtópicos, quais ainda não foram estudados.
+
+### Revisão espaçada
+- No registro do bloco, **Marcar pra revisar** cria uma revisão para o subtópico (ou "(geral)"): ela volta **amanhã e depois de 3, 7, 15, 30 e 60 dias**, até ser **consolidada**. Marcar de novo o mesmo subtópico reinicia no dia seguinte, sem duplicar.
+- **Montar sprint** avisa quando há revisões pendentes (é o único lembrete: o app não manda notificações de revisão) e oferece uma **pausa de revisão**. Nela cada subtópico pendente vem com **Acertei** e **Errei**: acertar avança para o próximo intervalo; errar volta para o dia seguinte. Revisões atrasadas continuam na fila, com o aviso de quantos dias.
+- Em **Progresso**, o cartão **Revisão espaçada** mostra pendentes, atrasadas e dominadas, e a lista do que vem a seguir.
+
+### Desempenho por subtópico e por banca
+- No registro do bloco você pode marcar a **banca** das questões (a **banca alvo** de Ajustes já vem marcada).
+- **Pontos fortes e fracos** por subtópico (a partir de 3 questões; forte = 70% ou mais de acerto).
+- **Desempenho por banca** (a partir de 50 questões por banca), comparado com a banca alvo.
 
 ### Configurações
 - Seu nome.
+- **Prova**: edital, data da prova e banca alvo.
 - Tema **claro** ou **escuro**, aplicado antes da tela carregar para não piscar.
 - **Backup**: exporta todos os seus dados para um arquivo e importa de volta (útil para trocar de aparelho ou antes de desinstalar).
 
@@ -156,7 +174,7 @@ Para abrir no Android Studio, abra a pasta `android/` e rode `npm run android:sy
 
 O app abre direto na tela inicial, com os dados já desenhados. O que foi feito para isso (medido com `npm run perf`, que simula um celular com CPU 4× mais lenta e 1.500 registros no banco):
 
-- **Ícones em SVG embutido**, só os 51 usados, no lugar da fonte do Font Awesome (155 KB de fonte e 100 KB de CSS que precisavam ser lidos antes de qualquer ícone aparecer).
+- **Ícones em SVG embutido**, só os 60 usados (21 no primeiro arquivo, os outros 39 chegam com as telas que os usam), no lugar da fonte do Font Awesome (155 KB de fonte e 100 KB de CSS que precisavam ser lidos antes de qualquer ícone aparecer).
 - **Leitura do banco antecipada**: começa quando o código é carregado, em paralelo com a montagem da interface, e o primeiro quadro já sai com as matérias desenhadas. Os registros de bloco (podem ser milhares) chegam logo depois da primeira pintura.
 - **Só o Ciclo no primeiro arquivo**: Progresso, Ajustes, Montar sprint, cronômetro e seletor de cores são carregados em segundo plano depois da primeira pintura, então abrem sem demora.
 - **Preact** no lugar do React nos builds: metade do JavaScript para o aparelho ler e compilar.
@@ -226,6 +244,27 @@ Decisões desta versão (2026-11-17), com o motivo, e as regras que não podem r
 - Nota = soma das 5 competências (0–1000), cada uma de 40 em 40. Redação "sem nota" e rascunho **não entram** nas médias.
 - Excluir redação e descartar rascunho: confirmação **e** desfazer.
 
+## Edital, revisão e banca por dentro
+
+Decisões desta versão (2026-11-17), com o motivo, e as regras que não podem regredir.
+
+**Decisões**
+- **A cobertura do edital cruza por chave, não pelo nome.** O app original ligava a matéria do app à do edital pelo nome, e renomear a matéria quebrava a cobertura. Agora cada matéria guarda `editalKey` (o nome da matéria do edital, gravado ao aplicar o edital); o nome só vale para matérias antigas sem chave. É um campo **opcional** da própria matéria: **o schema do banco não mudou** e o app original o ignora. Uma matéria que já tem a chave de outra matéria do edital não é "roubada" pelo nome.
+- **Só ENEM e Personalizado.** `data/editais.ts` não traz mais PRF, PF, INSS e tribunais: a interface do original nunca os ofereceu, e os dados deles eram de exemplo (pesos aproximados e incidências zeradas, a conferir à mão nos editais oficiais).
+- **A revisão se faz na pausa de revisão do sprint** (`review-break`), que é o **mesmo componente** da pausa comum (`BreakTimerView`, com uma lista de subtópicos). *Substitui* o original, em que as revisões podiam ser criadas mas **nunca concluídas** (a tela da fila foi desligada e a pausa só mostrava a lista).
+- **Algoritmo** (`utils/reviewAlgorithm.ts`, testado): D+1 → 3 → 7 → 15 → 30 → 60 → consolidado; errar volta ao D+1; `nextReviewAt` é sempre a meia-noite local; marcar de novo (sem diferenciar maiúsculas) reinicia sem duplicar.
+- **Apagar uma matéria apaga as revisões dela** (elas ficariam pendentes sem poder ser feitas).
+- **A banca passa a ser gravada no registro do bloco** e a banca alvo vem marcada. *Substitui* o original, em que a banca era coletada e descartada, então o cartão de banca nunca tinha dados.
+- **Pontos fortes e fracos** não se repetem: forte = 70% ou mais, fraco = abaixo disso, até 5 de cada. O original listava os mesmos subtópicos nas duas listas quando eram poucos; registros sem subtópico ficam de fora.
+- **Seletor de data próprio** (`DatePickerModal`), sem o campo de data do navegador; a contagem acompanha a virada do dia.
+- **Ícones divididos em dois grupos** (`Icon.tsx` e `iconsExtra.ts`): as Fases 4 a 6 somaram 39 ícones ao arquivo principal e atrasaram a abertura; agora só os 21 do primeiro quadro ficam nele (cada ícone extra vem do próprio arquivo do pacote, senão o empacotador o devolve ao arquivo principal). `utils/icons.test.ts` reprova se a tela inicial passar a usar um ícone extra.
+
+**Regras para não regredir**
+- O primeiro arquivo do app não importa `iconsExtra`, e toda tela sob demanda passa por `withIcons` em `screens.tsx`.
+- Nenhum `<input type="date">` ou `type="time"` em tela alguma (um teste confere).
+- Passos da carga em segundo plano do `AppDataContext` (simulados, redações, revisões) pulam com `if`, **nunca com `return`**: um `return` por "sem dados" fazia as redações nunca carregarem num banco sem simulados (bug real, achado pela ponte simulada).
+- A revisão consolidada nunca volta à fila; a atrasada continua nela.
+
 ## Estrutura do projeto
 
 ```
@@ -259,9 +298,7 @@ Para não perder nada, use **Ajustes → Seus dados → Exportar**: o app gera u
 
 ## Próximos passos
 
-O Sprint Base é uma base enxuta, pensada para crescer aos poucos. Algumas ideias para as próximas versões:
-
-- Revisão espaçada, edital e desempenho por banca
+O Sprint Base é uma base enxuta, pensada para crescer aos poucos. O que falta é o polimento final: desempenho em tabelas grandes, telas largas e tablets, acessibilidade, permissões mínimas do Android e a versão do app em Ajustes.
 
 ## O que não foi verificado
 
@@ -273,6 +310,8 @@ Conferido por testes unitários, ponta a ponta no Chrome (web e build de produç
 - **Tela ligada** (`FLAG_KEEP_SCREEN_ON`) durante o cronômetro, e voltar a apagar na pausa e no fim.
 - **Sobreviver ao Android matar o processo** no meio da prova (a lógica é testada; falta ver no aparelho) e a guarda de troca de aba no APK.
 - **Teclado numérico** e a rolagem da folha de registro com o teclado aberto, no WebView real.
+- **Aviso de fim do cronômetro da Redação** com a tela bloqueada (escreva com o cronômetro correndo, bloqueie a tela e espere os 90 minutos; para testar mais rápido, use um rascunho com tempo quase esgotado). O app pede esse aviso como inexato quando **Alarmes e lembretes** está desligado, então pode atrasar alguns minutos; a Redação não tem o botão para ligar essa permissão (o Simulado tem).
 - **Redação no aparelho**: escrever um texto longo, bloquear a tela, **forçar o Android a encerrar o app** (Configurações → Apps → Sprint → Forçar parada, ou arrastar o app para fora dos recentes) e reabrir: o rascunho deve estar na aba Redação com o texto e o tempo. A ponte simulada prova que o app grava no evento `appStateChange`; não prova que o WebView termina de gravar antes de o Android encerrar o processo.
 - **Teclado, autocorreção e IME em texto longo** (várias centenas de palavras, com acentos, correção automática e sugestões) no WebView real, e a rolagem do campo com o teclado aberto.
+- **Fase 6 no aparelho**: marcar uma revisão, fazer a pausa de revisão num sprint real, escolher a data da prova no seletor próprio e ver a contagem no Ciclo. O ciclo D+1 → D+60 foi percorrido por inteiro nos testes (alterando as datas no banco para "viajar no tempo"), mas não esperando os dias de verdade.
 - O teste ponta a ponta `-- --target android` continua sem ter rodado (e o roteiro do Simulado fica de fora dele: a janela de permissão do sistema cobre o app).

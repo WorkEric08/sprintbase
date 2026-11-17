@@ -4,7 +4,11 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useStreak } from '../hooks/useStreak';
 import StreakWidget from './StreakWidget';
 import SubjectCard from './SubjectCard';
-import { OverlayFallback, SprintBuilderView, SprintRunnerView, SubjectFormView } from './screens';
+import { DatePickerModal, OverlayFallback, SprintBuilderView, SprintRunnerView, SubjectFormView } from './screens';
+import CountdownWidget from './CountdownWidget';
+import { resolveEdital } from '../utils/edital';
+import { isDateKey } from '../utils/exam';
+import { SETTING_KEYS } from '../utils/settings';
 import ConfirmDialog from './ConfirmDialog';
 import Icon from './Icon';
 
@@ -18,7 +22,10 @@ function getGreeting(): string {
 
 /** Aba principal: matérias, progresso por matéria e entrada para o Montar Sprint. */
 const CicloView: React.FC = () => {
-  const { subjects, userName, addSubject, updateSubject, deleteSubject, resetSubjectBlocks } = useAppData();
+  const { subjects, userName, settings, setSetting, removeSetting, addSubject, updateSubject, deleteSubject, resetSubjectBlocks } = useAppData();
+  const examDate = isDateKey(settings[SETTING_KEYS.examDate]) ? settings[SETTING_KEYS.examDate] : null;
+  const editalName = resolveEdital(settings[SETTING_KEYS.selectedEdital], settings[SETTING_KEYS.customEdital])?.name;
+  const [pickingDate, setPickingDate] = useState(false);
   const { streak, enabled: streakEnabled, ready: streakReady } = useStreak();
 
   const [adding, setAdding] = useState(false);
@@ -48,6 +55,8 @@ const CicloView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {examDate && <CountdownWidget examDate={examDate} examName={editalName} onEditDate={() => setPickingDate(true)} />}
 
       {subjects.length === 0 ? (
         <div className="text-center py-16 px-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm md:max-w-lg md:mx-auto">
@@ -133,6 +142,17 @@ const CicloView: React.FC = () => {
           <span className="font-bold" style={{ color: confirmDelete.color }}>{confirmDelete.title}</span> e todos os seus blocos
           serão excluídos permanentemente.
         </ConfirmDialog>
+      )}
+
+      {pickingDate && (
+        <Suspense fallback={<OverlayFallback />}>
+          <DatePickerModal
+            value={examDate}
+            onSelect={date => { setSetting(SETTING_KEYS.examDate, date); setPickingDate(false); }}
+            onClear={() => { removeSetting(SETTING_KEYS.examDate); setPickingDate(false); }}
+            onClose={() => setPickingDate(false)}
+          />
+        </Suspense>
       )}
 
       {building && (

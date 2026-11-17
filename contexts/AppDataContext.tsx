@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../db';
-import { BlockLog, BlockType, PostBlockData, RedacaoSession, SimuladoRecord, Subject, SubjectInput } from '../types';
+import { BlockLog, BlockType, PostBlockData, RedacaoSession, ReviewItem, SimuladoRecord, Subject, SubjectInput } from '../types';
+import { ApplyPlan } from '../utils/edital';
+import { applyReviewResult, flagForReview } from '../utils/reviewAlgorithm';
 import { uid } from '../utils/id';
 import { syncSystemBars } from '../utils/native';
 import { SETTING_KEYS } from '../utils/settings';
@@ -20,6 +22,8 @@ interface AppData {
   simulados: SimuladoRecord[];
   /** Redações (concluídas e rascunhos), da mais recente para a mais antiga (também chegam depois da primeira pintura). */
   redacoes: RedacaoSession[];
+  /** Revisões espaçadas (marcadas em "Marcar pra revisar"). */
+  reviewItems: ReviewItem[];
   userName: string;
   theme: Theme;
   /** Todas as configurações (tabela `settings`, chave → texto). Valores estruturados vão como JSON. */
@@ -31,7 +35,12 @@ interface AppData {
   /** Soma 1 bloco concluído à matéria (respeita a meta `blockCount`). */
   completeBlock: (subjectId: string, type: BlockType) => void;
   /** Grava o registro pós-bloco (matéria denormalizada no log, como no original). */
+  /** Grava o registro pós-bloco: matéria denormalizada, banca e, se marcado, a revisão espaçada do subtópico. */
   saveBlockLog: (subjectId: string, data: PostBlockData, blockType: BlockType) => void;
+  /** Resultado de uma revisão: acertou avança no D+1→3→7→15→30→60→consolidado, errou volta ao D+1. */
+  reviewResult: (itemId: string, correct: boolean) => void;
+  /** Aplica um edital: cria as matérias que faltam e liga as que já existem (utils/edital.ts). */
+  applyEdital: (plan: ApplyPlan) => void;
   /** Grava (ou substitui, pelo id) um simulado. Serve também para desfazer uma exclusão. */
   saveSimulado: (record: SimuladoRecord) => void;
   deleteSimulado: (id: string) => void;
@@ -68,6 +77,7 @@ const LEGACY_LOCAL_STORAGE: [legacyKey: string, settingKey: string][] = [
   ['sprint_calendar_goal', SETTING_KEYS.calendarGoal],
   ['sprint_day_notes', SETTING_KEYS.dayNotes],
   ['sprint_completed_redacao_ids', SETTING_KEYS.completedRedacaoThemes],
+  ['sprint_custom_edital', SETTING_KEYS.customEdital],
 ];
 
 function migrateLegacyLocalStorage(loaded: Record<string, string>) {
@@ -160,6 +170,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [logsLoaded, setLogsLoaded] = useState(false);
   const [simulados, setSimuladosState] = useState<SimuladoRecord[]>([]);
   const [redacoes, setRedacoesState] = useState<RedacaoSession[]>([]);
+  const [reviewItems, setReviewItemsState] = useState<ReviewItem[]>([]);
   const [settings, setSettingsState] = useState<Record<string, string>>(seeded?.settings ?? {});
   // Tema inicial = o que o script do index.html já aplicou (evita flash até o banco carregar).
   const initialTheme = useRef<Theme>(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -171,6 +182,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const blockLogsRef = useRef<BlockLog[]>([]);
   const simuladosRef = useRef<SimuladoRecord[]>([]);
   const redacoesRef = useRef<RedacaoSession[]>([]);
+  const reviewItemsRef = useRef<ReviewItem[]>([]);
 
   const commitSubjects = useCallback((next: Subject[]) => {
     subjectsRef.current = next;
@@ -190,6 +202,11 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const commitRedacoes = useCallback((next: RedacaoSession[]) => {
     redacoesRef.current = next;
     setRedacoesState(next);
+  }, []);
+
+  const commitReviewItems = useCallback((next: ReviewItem[]) => {
+    reviewItemsRef.current = next;
+    setReviewItemsState(next);
   }, []);
 
   // ── Carga inicial ───────────────────────────────────────────────────────
@@ -231,10 +248,12 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const rows = await db.simuladoRecords.orderBy('completedAt').reverse().toArray();
         if (cancelled) return;
         // Banco sem simulados (o comum): não há o que mostrar, e uma nova renderização do app inteiro custaria à toa.
-        if (rows.length === 0 && simuladosRef.current.length === 0) return;
-        const loadedIds = new Set(rows.map(r => r.id));
-        commitSimulados([...simuladosRef.current.filter(r => !loadedIds.has(r.id)), ...rows]
-          .sort((a, b) => b.completedAt - a.completedAt));
+        // (Pular com `if`, NUNCA com `return`: este bloco é só um dos passos da carga e os seguintes ainda precisam rodar.)
+        if (rows.length > 0 || simuladosRef.current.length > 0) {
+          const loadedIds = new Set(rows.map(r => r.id));
+          commitSimulados([...simuladosRef.current.filter(r => !loadedIds.has(r.id)), ...rows]
+            .sort((a, b) => b.completedAt - a.completedAt));
+        }
       } catch (e) {
         logError('carregar simulados', e);
       }
@@ -243,15 +262,27 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // startedAt não é indexado (os índices são id, completedAt e themeId): ordena em memória.
         const rows = await db.redacaoSessions.toArray();
         if (cancelled) return;
-        if (rows.length === 0 && redacoesRef.current.length === 0) return; // idem: sem redações, nada a renderizar de novo
-        const loadedIds = new Set(rows.map(r => r.id));
-        commitRedacoes([...redacoesRef.current.filter(r => !loadedIds.has(r.id)), ...rows].sort(byStartedAtDesc));
+        if (rows.length > 0 || redacoesRef.current.length > 0) { // idem: sem redações, nada a renderizar de novo
+          const loadedIds = new Set(rows.map(r => r.id));
+          commitRedacoes([...redacoesRef.current.filter(r => !loadedIds.has(r.id)), ...rows].sort(byStartedAtDesc));
+        }
       } catch (e) {
         logError('carregar redações', e);
       }
+
+      try {
+        const rows = await db.reviewItems.toArray();
+        if (cancelled) return;
+        if (rows.length > 0 || reviewItemsRef.current.length > 0) {
+          const loadedIds = new Set(rows.map(r => r.id));
+          commitReviewItems([...reviewItemsRef.current.filter(r => !loadedIds.has(r.id)), ...rows]);
+        }
+      } catch (e) {
+        logError('carregar revisões', e);
+      }
     })();
     return () => { cancelled = true; };
-  }, [commitSubjects, commitBlockLogs, commitSimulados, commitRedacoes, seeded]);
+  }, [commitSubjects, commitBlockLogs, commitSimulados, commitRedacoes, commitReviewItems, seeded]);
 
   // ── Tema ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -283,7 +314,13 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const deleteSubject = useCallback((id: string) => {
     commitSubjects(subjectsRef.current.filter(s => s.id !== id));
     db.subjects.delete(id).catch(e => logError('excluir matéria', e));
-  }, [commitSubjects]);
+    // As revisões marcadas nesta matéria não fazem mais sentido (e não poderiam ser feitas): saem junto.
+    const orphans = reviewItemsRef.current.filter(r => r.subjectId === id);
+    if (orphans.length > 0) {
+      commitReviewItems(reviewItemsRef.current.filter(r => r.subjectId !== id));
+      db.reviewItems.bulkDelete(orphans.map(r => r.id)).catch(e => logError('excluir revisões da matéria', e));
+    }
+  }, [commitSubjects, commitReviewItems]);
 
   const resetSubjectBlocks = useCallback((id: string) => {
     const current = subjectsRef.current.find(s => s.id === id);
@@ -318,12 +355,42 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       questionsCorrect: data.questionsCorrect,
       subtopic: data.subtopic,
       selfScore: data.selfScore,
-      flaggedForReview: false,
+      flaggedForReview: data.flaggedForReview === true,
       blockType,
+      ...(data.banca ? { banca: data.banca } : {}),
     };
     commitBlockLogs([log, ...blockLogsRef.current]);
     db.blockLogs.put(log).catch(e => logError('salvar registro do bloco', e));
-  }, [commitBlockLogs]);
+
+    if (log.flaggedForReview) {
+      const { items, item } = flagForReview(reviewItemsRef.current, subject, data.subtopic);
+      commitReviewItems(items);
+      db.reviewItems.put(item).catch(e => logError('salvar revisão', e));
+    }
+  }, [commitBlockLogs, commitReviewItems]);
+
+  const reviewResult = useCallback((itemId: string, correct: boolean) => {
+    const current = reviewItemsRef.current.find(i => i.id === itemId);
+    if (!current) return;
+    const updated = applyReviewResult(current, correct);
+    commitReviewItems(reviewItemsRef.current.map(i => (i.id === itemId ? updated : i)));
+    db.reviewItems.put(updated).catch(e => logError('salvar resultado da revisão', e));
+  }, [commitReviewItems]);
+
+  const applyEdital = useCallback(({ add, link }: ApplyPlan) => {
+    const now = Date.now();
+    const created: Subject[] = add.map((a, i) => ({
+      id: uid(), title: a.title, color: a.color, duration: a.duration, blockCount: a.blockCount,
+      completedBlocks: [], createdAt: now + i, editalKey: a.editalKey,
+    }));
+    const linked = subjectsRef.current.map(s => {
+      const l = link.find(x => x.id === s.id);
+      return l ? { ...s, editalKey: l.editalKey } : s;
+    });
+    commitSubjects([...linked, ...created]);
+    const touched = [...created, ...linked.filter(s => link.some(x => x.id === s.id))];
+    if (touched.length > 0) db.subjects.bulkPut(touched).catch(e => logError('aplicar edital', e));
+  }, [commitSubjects]);
 
   // ── Simulados ───────────────────────────────────────────────────────────
   const saveSimulado = useCallback((record: SimuladoRecord) => {
@@ -371,14 +438,14 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [setSetting]);
 
   const value = useMemo<AppData>(() => ({
-    loading, subjects, blockLogs, logsLoaded, simulados, redacoes, userName, theme, settings,
+    loading, subjects, blockLogs, logsLoaded, simulados, redacoes, reviewItems, userName, theme, settings,
     addSubject, updateSubject, deleteSubject, resetSubjectBlocks,
-    completeBlock, saveBlockLog, saveSimulado, deleteSimulado, saveRedacao, deleteRedacao,
+    completeBlock, saveBlockLog, reviewResult, applyEdital, saveSimulado, deleteSimulado, saveRedacao, deleteRedacao,
     setUserName, setTheme, setSetting, removeSetting,
   }), [
-    loading, subjects, blockLogs, logsLoaded, simulados, redacoes, userName, theme, settings,
+    loading, subjects, blockLogs, logsLoaded, simulados, redacoes, reviewItems, userName, theme, settings,
     addSubject, updateSubject, deleteSubject, resetSubjectBlocks,
-    completeBlock, saveBlockLog, saveSimulado, deleteSimulado, saveRedacao, deleteRedacao,
+    completeBlock, saveBlockLog, reviewResult, applyEdital, saveSimulado, deleteSimulado, saveRedacao, deleteRedacao,
     setUserName, setTheme, setSetting, removeSetting,
   ]);
 

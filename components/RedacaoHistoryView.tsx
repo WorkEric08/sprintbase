@@ -4,7 +4,7 @@ import { RedacaoSession } from '../types';
 import { AXIS_COLORS, AXIS_LABELS, REDACAO_THEMES } from '../data/redacaoThemes';
 import { useBackButton } from '../hooks/useBackButton';
 import { COMPETENCIES, isDraft, isPaper, plainNotes } from '../utils/redacao';
-import { MAX_SCORE, averages, chartPoints, competencyColor, scoreColor } from '../utils/redacaoStats';
+import { MAX_SCORE, averages, chartPoints, competencyColor, competencySummary, scoreColor } from '../utils/redacaoStats';
 import { formatDuration } from '../utils/format';
 import ConfirmDialog from './ConfirmDialog';
 import EvolutionChart from './EvolutionChart';
@@ -35,6 +35,7 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
 
   const points = useMemo(() => chartPoints(sessions), [sessions]);
   const avg = useMemo(() => averages(sessions), [sessions]);
+  const byCompetency = useMemo(() => competencySummary(sessions), [sessions]);
 
   const remove = (s: RedacaoSession) => {
     onDelete(s.id);
@@ -98,6 +99,39 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
                 <div className={`${CARD} p-4`}>
                   <p className={`${CAPTION} mb-2`}>Evolução</p>
                   <EvolutionChart points={points} max={MAX_SCORE} unit="" color="#8b5cf6" label="Evolução da nota nas redações" />
+                </div>
+              )}
+
+              {byCompetency && (
+                <div data-testid="redacao-competencias" className={`${CARD} p-4 space-y-3`}>
+                  <p className={CAPTION}>
+                    Por competência · {byCompetency.count === 1 ? 'última redação' : `últimas ${byCompetency.count} redações`}
+                  </p>
+                  {byCompetency.items.map(c => (
+                    <div key={c.key}>
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          <span className="font-black text-violet-500 mr-1.5">{c.label}</span>{c.short}
+                          {byCompetency.weakest?.key === c.key && (
+                            <span className="ml-2 text-[9px] font-black uppercase tracking-widest text-red-500">ponto fraco</span>
+                          )}
+                        </span>
+                        <span className="text-xs font-black shrink-0" style={{ color: competencyColor(c.avg) }}>{c.avg}/200</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${(c.avg / 200) * 100}%`, backgroundColor: competencyColor(c.avg) }} />
+                      </div>
+                    </div>
+                  ))}
+                  {byCompetency.weakest && (
+                    <p className="flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 p-3 text-xs font-bold leading-relaxed text-red-800 dark:text-red-300">
+                      <Icon name="circle-exclamation" className="mt-0.5 shrink-0" />
+                      <span>
+                        Seu ponto fraco é {byCompetency.weakest.label} — {byCompetency.weakest.title} (média {byCompetency.weakest.avg}/200).
+                        Foque em: {byCompetency.weakest.desc.toLowerCase()}
+                      </span>
+                    </p>
+                  )}
                 </div>
               )}
 
