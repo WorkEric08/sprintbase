@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie';
-import { BlockLog, Subject } from './types';
+import { BlockLog, RedacaoSession, SimuladoRecord, Subject } from './types';
 
 interface SettingRecord {
   key: string;
@@ -8,8 +8,8 @@ interface SettingRecord {
 
 /**
  * Mesmo banco e mesmo histórico de versões do app original ('SprintDB', v1–v7).
- * As tabelas que a base ainda não usa (objectives, reviewItems, simuladoRecords,
- * redacaoSessions) continuam declaradas: o Dexie exige o schema completo para abrir
+ * As tabelas que o app ainda não usa (objectives, reviewItems)
+ * continuam declaradas: o Dexie exige o schema completo para abrir
  * um banco já existente, e assim os módulos futuros voltam sem migração.
  *
  * NUNCA editar versões antigas — mudanças de schema = nova `this.version(n)`.
@@ -18,6 +18,8 @@ class SprintDB extends Dexie {
   subjects!: Table<Subject>;
   settings!: Table<SettingRecord>;
   blockLogs!: Table<BlockLog>;
+  simuladoRecords!: Table<SimuladoRecord>;
+  redacaoSessions!: Table<RedacaoSession>;
 
   constructor() {
     super('SprintDB');

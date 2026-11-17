@@ -4,6 +4,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useStreak } from '../hooks/useStreak';
 import { Period, formatMinutes, getPeriodStart } from '../utils/format';
 import HeatmapView from './HeatmapView';
+import SimuladoAreaCard from './SimuladoAreaCard';
 import StreakWidget from './StreakWidget';
 import Icon from './Icon';
 
@@ -210,6 +211,9 @@ const ProgressView: React.FC = () => {
           Nenhuma atividade neste período
         </div>
       )}
+
+      {/* Desempenho por área nos simulados (some sem simulados) */}
+      <SimuladoAreaCard />
 
       {/* Calendário de estudos */}
       <div className="space-y-3 pt-2">

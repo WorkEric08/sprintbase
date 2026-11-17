@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ícone pequeno das notificações (avisos do simulado): um cronômetro, só o contorno em branco. O Android pinta por cima
+     com a cor definida em capacitor.config.ts; o desenho precisa ser de uma cor só, com fundo transparente. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M9,1h6v2h-6z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,4a9,9 0 1,0 0,18a9,9 0 1,0 0,-18zM12,6a7,7 0 1,1 0,14a7,7 0 1,1 0,-14z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M11,9h2v5h-2z" />
+</vector>

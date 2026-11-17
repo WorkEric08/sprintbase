@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { db } from '../db';
-import { BlockLog, BlockType, PostBlockData, Subject, SubjectInput } from '../types';
+import { BlockLog, BlockType, PostBlockData, RedacaoSession, SimuladoRecord, Subject, SubjectInput } from '../types';
 import { uid } from '../utils/id';
 import { syncSystemBars } from '../utils/native';
 import { SETTING_KEYS } from '../utils/settings';
@@ -16,6 +16,10 @@ interface AppData {
   /** Os registros de bloco chegam logo DEPOIS da primeira pintura; até lá `blockLogs` está vazio. */
   blockLogs: BlockLog[];
   logsLoaded: boolean;
+  /** Simulados registrados, do mais recente para o mais antigo (também chegam depois da primeira pintura). */
+  simulados: SimuladoRecord[];
+  /** Redações (concluídas e rascunhos), da mais recente para a mais antiga (também chegam depois da primeira pintura). */
+  redacoes: RedacaoSession[];
   userName: string;
   theme: Theme;
   /** Todas as configurações (tabela `settings`, chave → texto). Valores estruturados vão como JSON. */
@@ -28,6 +32,12 @@ interface AppData {
   completeBlock: (subjectId: string, type: BlockType) => void;
   /** Grava o registro pós-bloco (matéria denormalizada no log, como no original). */
   saveBlockLog: (subjectId: string, data: PostBlockData, blockType: BlockType) => void;
+  /** Grava (ou substitui, pelo id) um simulado. Serve também para desfazer uma exclusão. */
+  saveSimulado: (record: SimuladoRecord) => void;
+  deleteSimulado: (id: string) => void;
+  /** Grava (ou substitui, pelo id) uma redação. Serve ao salvamento automático do rascunho e a desfazer uma exclusão. */
+  saveRedacao: (session: RedacaoSession) => void;
+  deleteRedacao: (id: string) => void;
   setUserName: (name: string) => void;
   setTheme: (theme: Theme) => void;
   /** Grava uma configuração qualquer (otimista + Dexie). */
@@ -43,6 +53,8 @@ export function useAppData(): AppData {
   return ctx;
 }
 
+const byStartedAtDesc = (a: RedacaoSession, b: RedacaoSession) => b.startedAt - a.startedAt;
+
 function logError(what: string, e: unknown) {
   console.error(`Falha ao ${what}`, e);
 }
@@ -55,6 +67,7 @@ function logError(what: string, e: unknown) {
 const LEGACY_LOCAL_STORAGE: [legacyKey: string, settingKey: string][] = [
   ['sprint_calendar_goal', SETTING_KEYS.calendarGoal],
   ['sprint_day_notes', SETTING_KEYS.dayNotes],
+  ['sprint_completed_redacao_ids', SETTING_KEYS.completedRedacaoThemes],
 ];
 
 function migrateLegacyLocalStorage(loaded: Record<string, string>) {
@@ -145,6 +158,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [subjects, setSubjectsState] = useState<Subject[]>(seeded?.subjects ?? []);
   const [blockLogs, setBlockLogsState] = useState<BlockLog[]>([]);
   const [logsLoaded, setLogsLoaded] = useState(false);
+  const [simulados, setSimuladosState] = useState<SimuladoRecord[]>([]);
+  const [redacoes, setRedacoesState] = useState<RedacaoSession[]>([]);
   const [settings, setSettingsState] = useState<Record<string, string>>(seeded?.settings ?? {});
   // Tema inicial = o que o script do index.html já aplicou (evita flash até o banco carregar).
   const initialTheme = useRef<Theme>(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -154,6 +169,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const subjectsRef = useRef<Subject[]>(seeded?.subjects ?? []);
   const blockLogsRef = useRef<BlockLog[]>([]);
+  const simuladosRef = useRef<SimuladoRecord[]>([]);
+  const redacoesRef = useRef<RedacaoSession[]>([]);
 
   const commitSubjects = useCallback((next: Subject[]) => {
     subjectsRef.current = next;
@@ -163,6 +180,16 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const commitBlockLogs = useCallback((next: BlockLog[]) => {
     blockLogsRef.current = next;
     setBlockLogsState(next);
+  }, []);
+
+  const commitSimulados = useCallback((next: SimuladoRecord[]) => {
+    simuladosRef.current = next;
+    setSimuladosState(next);
+  }, []);
+
+  const commitRedacoes = useCallback((next: RedacaoSession[]) => {
+    redacoesRef.current = next;
+    setRedacoesState(next);
   }, []);
 
   // ── Carga inicial ───────────────────────────────────────────────────────
@@ -198,9 +225,33 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } finally {
         if (!cancelled) setLogsLoaded(true);
       }
+
+      // Os simulados (dezenas de linhas) vêm por último: nenhuma tela inicial precisa deles.
+      try {
+        const rows = await db.simuladoRecords.orderBy('completedAt').reverse().toArray();
+        if (cancelled) return;
+        // Banco sem simulados (o comum): não há o que mostrar, e uma nova renderização do app inteiro custaria à toa.
+        if (rows.length === 0 && simuladosRef.current.length === 0) return;
+        const loadedIds = new Set(rows.map(r => r.id));
+        commitSimulados([...simuladosRef.current.filter(r => !loadedIds.has(r.id)), ...rows]
+          .sort((a, b) => b.completedAt - a.completedAt));
+      } catch (e) {
+        logError('carregar simulados', e);
+      }
+
+      try {
+        // startedAt não é indexado (os índices são id, completedAt e themeId): ordena em memória.
+        const rows = await db.redacaoSessions.toArray();
+        if (cancelled) return;
+        if (rows.length === 0 && redacoesRef.current.length === 0) return; // idem: sem redações, nada a renderizar de novo
+        const loadedIds = new Set(rows.map(r => r.id));
+        commitRedacoes([...redacoesRef.current.filter(r => !loadedIds.has(r.id)), ...rows].sort(byStartedAtDesc));
+      } catch (e) {
+        logError('carregar redações', e);
+      }
     })();
     return () => { cancelled = true; };
-  }, [commitSubjects, commitBlockLogs, seeded]);
+  }, [commitSubjects, commitBlockLogs, commitSimulados, commitRedacoes, seeded]);
 
   // ── Tema ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -274,6 +325,29 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     db.blockLogs.put(log).catch(e => logError('salvar registro do bloco', e));
   }, [commitBlockLogs]);
 
+  // ── Simulados ───────────────────────────────────────────────────────────
+  const saveSimulado = useCallback((record: SimuladoRecord) => {
+    commitSimulados([record, ...simuladosRef.current.filter(r => r.id !== record.id)]
+      .sort((a, b) => b.completedAt - a.completedAt));
+    db.simuladoRecords.put(record).catch(e => logError('salvar simulado', e));
+  }, [commitSimulados]);
+
+  const deleteSimulado = useCallback((id: string) => {
+    commitSimulados(simuladosRef.current.filter(r => r.id !== id));
+    db.simuladoRecords.delete(id).catch(e => logError('excluir simulado', e));
+  }, [commitSimulados]);
+
+  // ── Redações ────────────────────────────────────────────────────────────
+  const saveRedacao = useCallback((session: RedacaoSession) => {
+    commitRedacoes([session, ...redacoesRef.current.filter(r => r.id !== session.id)].sort(byStartedAtDesc));
+    db.redacaoSessions.put(session).catch(e => logError('salvar redação', e));
+  }, [commitRedacoes]);
+
+  const deleteRedacao = useCallback((id: string) => {
+    commitRedacoes(redacoesRef.current.filter(r => r.id !== id));
+    db.redacaoSessions.delete(id).catch(e => logError('excluir redação', e));
+  }, [commitRedacoes]);
+
   // ── Configurações ───────────────────────────────────────────────────────
   const setSetting = useCallback((key: string, value: string) => {
     setSettingsState(prev => ({ ...prev, [key]: value }));
@@ -297,13 +371,15 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [setSetting]);
 
   const value = useMemo<AppData>(() => ({
-    loading, subjects, blockLogs, logsLoaded, userName, theme, settings,
+    loading, subjects, blockLogs, logsLoaded, simulados, redacoes, userName, theme, settings,
     addSubject, updateSubject, deleteSubject, resetSubjectBlocks,
-    completeBlock, saveBlockLog, setUserName, setTheme, setSetting, removeSetting,
+    completeBlock, saveBlockLog, saveSimulado, deleteSimulado, saveRedacao, deleteRedacao,
+    setUserName, setTheme, setSetting, removeSetting,
   }), [
-    loading, subjects, blockLogs, logsLoaded, userName, theme, settings,
+    loading, subjects, blockLogs, logsLoaded, simulados, redacoes, userName, theme, settings,
     addSubject, updateSubject, deleteSubject, resetSubjectBlocks,
-    completeBlock, saveBlockLog, setUserName, setTheme, setSetting, removeSetting,
+    completeBlock, saveBlockLog, saveSimulado, deleteSimulado, saveRedacao, deleteRedacao,
+    setUserName, setTheme, setSetting, removeSetting,
   ]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

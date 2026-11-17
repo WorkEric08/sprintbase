@@ -110,9 +110,13 @@ async function click(text, { exact = false, nth = 0 } = {}) {
       const x = r.left + r.width / 2;
       const y = r.top + r.height / 2;
       const top = document.elementFromPoint(x, y);
-      if (top && (el === top || el.contains(top))) hits.push({ x, y });
+      if (top && (el === top || el.contains(top))) hits.push(el);
     }
-    return hits[nth] ?? null;
+    const chosen = hits[nth];
+    if (!chosen) return null;
+    chosen.scrollIntoView({ block: 'center', inline: 'center' });
+    const r = chosen.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }, { needle, exact, nth }), `botão clicável "${text}"`);
   await page.mouse.click(point.x, point.y);
   await sleep(120);
@@ -146,6 +150,53 @@ async function injectSubject(subject) {
     };
   }), subject);
 }
+
+/** Acesso direto ao IndexedDB do app (prepara cenários que levariam horas pela tela). */
+const idb = (store, action, value) => page.evaluate(({ store, action, value }) => new Promise((resolve, reject) => {
+  const req = indexedDB.open('SprintDB');
+  req.onerror = () => reject(req.error);
+  req.onsuccess = () => {
+    const database = req.result;
+    const tx = database.transaction(store, action === 'get' || action === 'all' ? 'readonly' : 'readwrite');
+    const os = tx.objectStore(store);
+    let out;
+    if (action === 'put') os.put(value);
+    else if (action === 'delete') os.delete(value);
+    else if (action === 'clear') os.clear();
+    else if (action === 'get') out = os.get(value);
+    else if (action === 'all') out = os.getAll();
+    tx.oncomplete = () => { database.close(); resolve(out ? out.result : undefined); };
+    tx.onerror = () => reject(tx.error);
+  };
+}), { store, action, value });
+
+const SIM_KEY = 'simulado_active';
+const getSimSession = async () => {
+  const row = await idb('settings', 'get', SIM_KEY);
+  return row ? JSON.parse(row.value) : null;
+};
+const putSimSession = session => idb('settings', 'put', { key: SIM_KEY, value: JSON.stringify(session) });
+/** Sessão de simulado pronta para injetar. `ago` = há quantos ms ela começou. */
+const simSession = ({ minutes = 60, speed = 1, strict = false, ago = 0, extra = {} } = {}) => ({
+  template: { id: 'custom', name: 'Customizado', durationMinutes: minutes, strictMode: strict, hasRedacao: false, areas: [] },
+  startedAt: Date.now() - ago, pausedAt: null, pausedMs: 0, endedAt: null, speed, ...extra,
+});
+const simRecord = ({ id, daysAgo, areas, over = {} }) => {
+  const at = Date.now() - daysAgo * 86_400_000;
+  return {
+    id, templateId: 'custom', templateName: 'Customizado', startedAt: at - 3 * 3_600_000, completedAt: at,
+    plannedDurationMinutes: 180, actualDurationMinutes: 180, completed: true,
+    areaResults: areas.map(([areaName, questionsCorrect, questionsTotal]) => ({ areaName, color: '#3b82f6', questionsCorrect, questionsTotal })),
+    timeControlScore: null, perception: '', redacaoText: '', redacaoScore: null, ...over,
+  };
+};
+const clockText = () => page.evaluate(() => document.querySelector('[data-testid="simulado-clock"]')?.textContent ?? '');
+const clockSeconds = async () => {
+  const [h, m, s] = (await clockText()).split(':').map(Number);
+  return h * 3600 + m * 60 + s;
+};
+const noHorizontalScroll = () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1
+  && document.body.scrollWidth <= window.innerWidth + 1);
 
 /**
  * Mede, a cada quadro de animação, se a tela cheia do sprint existe e está opaca, e se ela cobre o centro
@@ -949,6 +1000,528 @@ async function main() {
     await waitText('Vamos começar!');
     await reload(); // restaura o relógio real
   });
+
+  // ── Simulado ── (no APK o sistema abre a janela de permissão de notificações e cobre o app: lá o roteiro é manual)
+  if (!isAndroid) {
+    const typeAria = async (label, value) => {
+      const point = await waitFor(() => page.evaluate(l => {
+        const el = document.querySelector(`input[aria-label="${l}"]`);
+        if (!el) return null;
+        el.scrollIntoView({ block: 'center' });
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }, label), `campo "${label}"`);
+      await page.mouse.click(point.x, point.y);
+      await page.keyboard.down('Control'); await page.keyboard.press('KeyA'); await page.keyboard.up('Control');
+      await page.keyboard.type(String(value), { delay: 10 });
+      await page.keyboard.press('Enter');
+      await sleep(100);
+    };
+    const openSimulado = async () => { await click('Simulado', { nth: 0 }); await sleep(250); };
+
+    group('Simulado');
+    await check('a aba Simulado oferece ENEM Dia 1, ENEM Dia 2 e Customizado, e o modo dev oferece a velocidade', async () => {
+      await click('Ciclo');
+      await openSimulado();
+      await waitText('Começar · 5h 30min');
+      for (const t of ['ENEM — Dia 1', 'ENEM — Dia 2', 'Customizado']) assert(await hasText(t), `modelo ausente: ${t}`);
+      assert(await hasText('Modo desenvolvedor · velocidade'), 'velocidade do modo dev ausente');
+      assert(await hasText('só aparecem com o app aberto'), 'aviso de que no navegador os avisos só valem com o app aberto');
+      assert(await noHorizontalScroll(), 'rolagem horizontal na aba Simulado');
+    });
+    await check('Customizado: duração em passos e modo estrito', async () => {
+      await click('Customizado');
+      await waitText('Começar · 3h');
+      await click('Aumentar duração');
+      await waitText('Começar · 3h 30min');
+      await click('Diminuir duração'); await click('Diminuir duração');
+      await waitText('Começar · 2h 30min');
+      await click('Modo estrito');
+      assert(await page.$eval('[role="switch"]', e => e.getAttribute('aria-checked')) === 'true', 'modo estrito não ligou');
+      await click('ENEM — Dia 1');
+      await waitText('Começar · 5h 30min');
+    });
+
+    await check('começar o ENEM Dia 1 (estrito, ×60): cronômetro de 5h30 sem botão de pausa, gravado no banco', async () => {
+      await click('×60');
+      await click('Começar ·');
+      await waitFor(async () => (await clockText()) !== '', 'cronômetro');
+      assert(await hasText('Estrito') && await hasText('Dev ×60'), 'selos Estrito / Dev ×60 ausentes');
+      assert(!(await hasText('Pausar')), 'modo estrito não deve ter pausa');
+      const s = await clockSeconds();
+      assert(s > 5 * 3600 && s <= 5.5 * 3600, `cronômetro fora de 5h–5h30 (${await clockText()})`);
+      const saved = await getSimSession();
+      assert(saved && saved.template.id === 'enem-dia1' && saved.speed === 60 && saved.endedAt === null, 'sessão não foi gravada');
+      assert(await noHorizontalScroll(), 'rolagem horizontal no cronômetro');
+    });
+    await check('o relógio corre pelo horário real: ×60 faz 1 s real descontar 1 min de prova', async () => {
+      const a = await clockSeconds();
+      await sleep(2200);
+      const b = await clockSeconds();
+      const spent = a - b;
+      assert(spent >= 100 && spent <= 160, `em ~2,2 s reais descontou ${spent} s de prova (esperado ~132)`);
+    });
+    await check('trocar de aba com o simulado correndo pede confirmação (e ficar mantém tudo)', async () => {
+      await click('Progresso');
+      await waitText('Sair desta tela?');
+      assert(await hasText('O cronômetro continua correndo'), 'a confirmação não explica o que acontece');
+      await click('Ficar no simulado');
+      await waitGone('Sair desta tela?');
+      assert((await clockText()) !== '', 'saiu da tela mesmo escolhendo ficar');
+      assert(!(await hasText('Progresso geral')), 'a aba mudou mesmo escolhendo ficar');
+    });
+    await check('sair da tela deixa o simulado correndo e a aba sinaliza "em andamento"', async () => {
+      await click('Progresso');
+      await click('Sair da tela');
+      await waitText('Progresso geral');
+      assert(await page.evaluate(() => [...document.querySelectorAll('nav button')].some(b => b.innerText.toLowerCase().includes('em andamento'))),
+        'a aba Simulado não mostra que há simulado em andamento');
+      assert((await getSimSession())?.endedAt === null, 'o simulado deveria seguir em andamento');
+    });
+    await check('ao voltar, e mesmo depois de recarregar o app, o cronômetro continua do ponto certo', async () => {
+      await openSimulado();
+      await waitFor(async () => (await clockText()) !== '', 'cronômetro ao voltar');
+      const before = await clockSeconds();
+      await reload();
+      await openSimulado();
+      await waitFor(async () => (await clockText()) !== '', 'cronômetro depois de recarregar');
+      const after = await clockSeconds();
+      assert(after < before && before - after < 600, `cronômetro saltou (${before} → ${after})`);
+    });
+    await check('botão voltar do aparelho pergunta antes de encerrar (e voltar de novo fecha a pergunta)', async () => {
+      await target.pressBack();
+      await waitText('Encerrar simulado?');
+      await target.pressBack();
+      await waitGone('Encerrar simulado?');
+      assert((await clockText()) !== '', 'o simulado fechou com o botão voltar');
+    });
+    await check('encerrar (modo dev) abre o registro como concluído, com a prova toda', async () => {
+      await click('Encerrar simulado');
+      await waitText('Encerrar simulado?');
+      await click('Sim, encerrar');
+      await waitText('Registrar simulado');
+      assert(await hasText('ENEM — Dia 1 · 5h 30min'), 'duração do registro incorreta');
+      assert(!(await hasText('interrompido')), 'em modo dev o simulado conta como concluído');
+      assert((await getSimSession())?.endedAt !== null, 'o fim não foi gravado');
+    });
+    await check('registro: digitar acertos por área, redação e controle do tempo, e ver o aproveitamento', async () => {
+      await typeAria('Corretas em Linguagens e Códigos', 30);
+      await typeAria('Corretas em Ciências Humanas', 27);
+      await waitText('63%'); // 57 de 90 questões (a redação não conta como questão)
+      assert(await hasText('57 de 90 questões'), 'a redação não deve entrar como questão errada');
+      await typeAria('Corretas em Linguagens e Códigos', 99); // não passa do total
+      assert(await page.$eval('input[aria-label="Corretas em Linguagens e Códigos"]', e => e.value) === '40', 'acertos passaram do total de questões');
+      await typeAria('Corretas em Linguagens e Códigos', 30);
+      await page.evaluate(() => { document.getElementById('redacao-score').scrollIntoView({ block: 'center' }); });
+      await page.type('#redacao-score', '800');
+      await click('4', { exact: true });
+      await click('Salvar registro');
+      await waitGone('Registrar simulado');
+      assert((await getSimSession()) === null, 'o simulado em andamento deveria ter sido limpo');
+      const all = await idb('simuladoRecords', 'all');
+      assert(all.length === 1 && all[0].redacaoScore === 800 && all[0].timeControlScore === 4 && all[0].completed, 'registro gravado incorreto');
+    });
+
+    await check('histórico: registro com nota, detalhe por área e redação', async () => {
+      await click('Histórico de simulados');
+      await waitText('Histórico de simulados');
+      await waitText('63%');
+      await click('ENEM — Dia 1', { nth: 0 });
+      await waitText('30/40');
+      assert(await hasText('Redação: 800/1000') && await hasText('Controle do tempo: 4/5'), 'detalhe do registro incompleto');
+    });
+    await check('histórico com vários simulados: média, gráfico de evolução e linha do tempo', async () => {
+      await target.pressBack(); // fecha o histórico
+      await idb('simuladoRecords', 'put', simRecord({ id: 'e2e-a', daysAgo: 6, areas: [['Matemática', 40, 50], ['Português', 30, 50]] }));
+      await idb('simuladoRecords', 'put', simRecord({ id: 'e2e-b', daysAgo: 3, areas: [['Matemática', 35, 50], ['Português', 32, 50]] }));
+      await idb('simuladoRecords', 'put', simRecord({ id: 'e2e-c', daysAgo: 1, areas: [['Matemática', 20, 50], ['Português', 33, 50]] }));
+      await reload();
+      await openSimulado();
+      await click('Histórico de simulados');
+      await waitText('Média (últimos 3)');
+      assert(await page.$('svg[aria-label="Evolução do aproveitamento nos simulados"]'), 'gráfico de evolução ausente');
+      const dots = await page.$$eval('svg[aria-label="Evolução do aproveitamento nos simulados"] [role="button"]', els => els.length);
+      assert(dots === 4, `esperava 4 pontos no gráfico, veio ${dots}`);
+      assert((await page.$$('[data-testid="simulado-record"]')).length === 4, 'linha do tempo sem os 4 simulados');
+      assert(await noHorizontalScroll(), 'rolagem horizontal no histórico');
+      // tocar num ponto do gráfico mostra a data e o valor dele
+      const first = await page.$('svg[aria-label="Evolução do aproveitamento nos simulados"] [role="button"]');
+      const box = await first.boundingBox();
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      await sleep(150);
+      assert(await page.$eval('svg[aria-label="Evolução do aproveitamento nos simulados"] [role="button"]', e => e.getAttribute('aria-pressed')) === 'true',
+        'o ponto tocado não ficou selecionado');
+    });
+    await check('excluir pede confirmação e dá para DESFAZER; sem desfazer, a exclusão fica', async () => {
+      await click('Excluir simulado', { nth: 0 });
+      await waitText('Excluir simulado?');
+      await click('Sim, excluir');
+      await waitText('Simulado excluído');
+      assert((await page.$$('[data-testid="simulado-record"]')).length === 3, 'o registro não saiu da lista');
+      await click('Desfazer');
+      await waitFor(async () => (await page.$$('[data-testid="simulado-record"]')).length === 4, 'registro de volta');
+      assert((await idb('simuladoRecords', 'all')).length === 4, 'o desfazer não gravou no banco');
+      await click('Excluir simulado', { nth: 0 });
+      await click('Sim, excluir');
+      await waitText('Simulado excluído');
+      await sleep(7600); // o "Desfazer" some e a exclusão vira definitiva
+      assert(!(await hasText('Desfazer')), 'o aviso de desfazer não sumiu sozinho');
+      assert((await idb('simuladoRecords', 'all')).length === 3, 'a exclusão não ficou');
+    });
+    await check('Progresso: desempenho por área mostra a maior queda', async () => {
+      await target.pressBack();
+      await click('Progresso');
+      await waitText('desempenho por área');
+      assert(await hasText('Sua maior queda foi em Matemática'), 'recomendação da maior queda ausente');
+      assert(await page.evaluate(() => !!document.querySelector('[data-testid="simulado-area-card"]')), 'cartão ausente');
+    });
+
+    await check('o tempo acaba com o app aberto: o registro abre sozinho e "Pular" guarda o simulado sem gabarito', async () => {
+      await putSimSession(simSession({ minutes: 0.05, ago: 1000 })); // 3 s de prova
+      await reload();
+      await openSimulado();
+      await waitText('Registrar simulado', 8000);
+      assert(await hasText('Pular guarda só o tempo'), 'texto sobre o "Pular" ausente');
+      await click('Pular', { exact: true });
+      await waitGone('Registrar simulado');
+      assert((await getSimSession()) === null, 'a sessão deveria ter sido limpa');
+      const all = (await idb('simuladoRecords', 'all')).filter(r => r.templateName === 'Customizado' && r.areaResults.length === 0 && r.completed);
+      assert(all.length >= 1, 'o simulado pulado não foi guardado');
+    });
+    await check('o tempo acabou com o app FECHADO: ao reabrir o registro já está lá, concluído', async () => {
+      await putSimSession(simSession({ minutes: 60, ago: 4 * 3_600_000 })); // começou há 4 h, durava 1 h
+      await reload();
+      assert(await page.evaluate(() => [...document.querySelectorAll('nav button')].some(b => b.innerText.toLowerCase().includes('em andamento'))),
+        'sem sinal de simulado pendente na aba');
+      await openSimulado();
+      await waitText('Registrar simulado', 8000);
+      assert(await hasText('Customizado · 1h') && !(await hasText('interrompido')), 'devia constar como concluído, com 1h');
+      await click('Pular', { exact: true });
+      await waitGone('Registrar simulado');
+    });
+    await check('aviso na tela quando o tempo cruza 30 minutos', async () => {
+      // 40 min de prova a ×60 começou há 5 s reais: os 30 min restantes são cruzados daqui a ~5 s, com o app já aberto.
+      await putSimSession(simSession({ minutes: 40, speed: 60, ago: 5000 }));
+      await reload();
+      await openSimulado();
+      assert(!(await hasText('Faltam 30 minutos')), 'avisou antes da hora');
+      await waitText('Faltam 30 minutos', 9000);
+      await waitGone('Faltam 30 minutos', 6000); // o aviso some sozinho
+      assert(!(await hasText('Faltam 10 minutos')), 'avisou antes da hora');
+    });
+    await check('pausar congela o relógio e retomar solta; a pausa fica gravada', async () => {
+      await putSimSession(simSession({ minutes: 120 }));
+      await reload();
+      await openSimulado();
+      await waitFor(async () => (await clockText()) !== '', 'cronômetro');
+      await click('Pausar');
+      await waitText('Pausado');
+      const a = await clockSeconds();
+      await sleep(1600);
+      assert(await clockSeconds() === a, 'o relógio andou com o simulado pausado');
+      assert((await getSimSession()).pausedAt !== null, 'a pausa não foi gravada');
+      await click('Retomar');
+      await waitGone('Pausado');
+      const s = await getSimSession();
+      assert(s.pausedAt === null && s.pausedMs >= 1500, 'a retomada não somou o tempo parado');
+      await waitFor(async () => (await clockSeconds()) < a, 'relógio voltar a andar', 4000);
+    });
+    await check('encerrar antes do tempo (fora do modo dev): registro "interrompido" com os minutos usados', async () => {
+      await idb('settings', 'put', { key: 'user_name', value: 'Eric' }); // sai do modo desenvolvedor
+      await putSimSession(simSession({ minutes: 120, ago: 20 * 60_000 })); // 20 min depois de começar
+      await reload();
+      await openSimulado();
+      await click('Encerrar simulado');
+      await waitText('registrada como a duração real'.replace('registrada', 'registrado'));
+      await click('Sim, encerrar');
+      await waitText('Registrar simulado');
+      assert(await hasText('Customizado · 20min (interrompido)'), 'o registro deveria dizer 20min e interrompido');
+      await click('Salvar registro');
+      await waitGone('Registrar simulado');
+      const rec = (await idb('simuladoRecords', 'all')).find(r => !r.completed);
+      assert(rec && rec.actualDurationMinutes === 20, 'minutos usados incorretos no registro interrompido');
+      await idb('settings', 'put', { key: 'user_name', value: 'DevInfo' });
+      await reload();
+    });
+    await check('telas do Simulado sem rolagem lateral e sem texto estourando em 320, 360, 390, 768 e 1280', async () => {
+      await putSimSession(simSession({ minutes: 120 }));
+      await reload();
+      await openSimulado();
+      for (const [w, h] of [[320, 568], [360, 640], [390, 844], [768, 1024], [1280, 800]]) {
+        await page.setViewport({ width: w, height: h, deviceScaleFactor: 1, isMobile: w < 768, hasTouch: w < 768 });
+        await sleep(300);
+        // (mudar isMobile/hasTouch recarrega a página no Puppeteer, e o app volta ao Ciclo)
+        if ((await clockText()) === '') await openSimulado();
+        await waitFor(async () => (await clockText()) !== '', `cronômetro em ${w}`);
+        assert(await noHorizontalScroll(), `rolagem horizontal no cronômetro a ${w}px`);
+        const fits = await page.evaluate(() => {
+          const main = document.querySelector('main');
+          return main.scrollHeight <= main.clientHeight + 1;
+        });
+        assert(fits, `o cronômetro precisa de rolagem vertical a ${w}x${h}`);
+      }
+      await page.setViewport(MOBILE);
+      await sleep(500);
+      if ((await clockText()) === '') await openSimulado();
+      await click('Encerrar simulado');
+      await click('Sim, encerrar');
+      await click('Pular', { exact: true });
+      await waitGone('Registrar simulado');
+    });
+  }
+
+  // ── Redação ── (a escrita é testada aqui; a ponte nativa do app pausado é testada em simulado-nativo.mjs)
+  if (!isAndroid) {
+    const redacaoRows = () => idb('redacaoSessions', 'all');
+    const draftNow = async () => (await redacaoRows()).find(r => r.completedAt === null);
+    const writerOpen = () => page.evaluate(() => !!document.querySelector('[data-testid="redacao-writer"]'));
+    const rClock = () => page.evaluate(() => document.querySelector('[data-testid="redacao-clock"]')?.textContent ?? '');
+    const rSeconds = async () => { const [m, s] = (await rClock()).split(':').map(Number); return m * 60 + s; };
+    const openRedacao = async () => { await click('Redação', { exact: true }); await sleep(300); };
+    const TEXT = 'A valorização das comunidades tradicionais exige ação coordenada do Estado e da sociedade, '
+      + 'porque a ausência de políticas públicas perpetua a exclusão. Além disso, é preciso garantir educação, saúde e '
+      + 'proteção territorial, de modo que a cultura desses povos seja preservada para as próximas gerações.';
+    const typeText = async (text) => {
+      const p = await waitFor(() => page.evaluate(() => {
+        const el = document.getElementById('redacao-text');
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: Math.min(r.top + 40, window.innerHeight - 40) };
+      }), 'campo de texto da redação');
+      await page.mouse.click(p.x, p.y);
+      await page.keyboard.down('Control'); await page.keyboard.press('End'); await page.keyboard.up('Control'); // o cursor vai para o fim do texto
+      await page.keyboard.type(text, { delay: 2 });
+      await sleep(150);
+    };
+    const hidePage = async () => page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    });
+
+    group('Redação');
+    await check('a aba Redação lista os temas, com busca, filtro por eixo e o aviso "A conferir" nos do ENEM', async () => {
+      await idb('redacaoSessions', 'clear');
+      await idb('settings', 'delete', 'completed_redacao_themes');
+      await reload();
+      await openRedacao();
+      await waitText('Todos · 43');
+      assert(await hasText('Desafios para a valorização de comunidades e povos tradicionais'), 'tema ENEM 2022 ausente');
+      assert(await hasText('a conferir'), 'os temas do ENEM não verificados deviam mostrar "A conferir"');
+      assert(await noHorizontalScroll(), 'rolagem horizontal na aba Redação');
+      await typeInto('Buscar tema', 'cinema');
+      await waitFor(async () => (await page.$$('[data-testid="redacao-themes"] > button')).length === 1, 'busca "cinema" com 1 tema');
+      await typeInto('Buscar tema', '');
+      await click('Educação ·');
+      assert((await page.$$('[data-testid="redacao-themes"] > button')).length >= 2, 'filtro de eixo sem temas');
+      await click('Todos ·');
+    });
+    await check('tocar num tema abre a escolha do modo (no app ou no papel), com o texto de apoio', async () => {
+      await click('Desafios para a valorização');
+      await waitText('Como vai fazer a redação?');
+      assert(await hasText('Escrever aqui') && await hasText('Escrever no papel'), 'opções de modo ausentes');
+      assert(await hasText('povos tradicionais'), 'texto de apoio ausente na escolha do modo');
+    });
+    await check('escrever aqui: tela cheia com cronômetro de 90 min já correndo e contador de palavras', async () => {
+      await click('Escrever aqui');
+      await waitFor(writerOpen, 'tela de escrita');
+      const s = await rSeconds();
+      assert(s > 89 * 60 && s <= 90 * 60, `cronômetro fora de 89–90 min (${await rClock()})`);
+      await typeText(TEXT);
+      const words = await page.$eval('[data-testid="redacao-words"]', e => e.textContent);
+      assert(/^4\d palavras$|^3\d palavras$/.test(words ?? ''), `contador de palavras estranho: ${words}`);
+      assert(await noHorizontalScroll(), 'rolagem horizontal na escrita');
+    });
+    await check('app vai para segundo plano: o rascunho é gravado na hora (não espera o salvamento de 5 s)', async () => {
+      await hidePage();
+      const d = await waitFor(draftNow, 'rascunho no banco', 2000);
+      assert(d.text === TEXT, 'o texto gravado não é o digitado (acentos ou espaços perdidos)');
+      assert(d.completedAt === null && d.elapsedMs > 0 && d.themeId === 'enem-2022', 'rascunho incompleto');
+    });
+    await check('o Android mata o app: ao reabrir, o rascunho está lá e continua do ponto onde parou', async () => {
+      await reload();
+      await openRedacao();
+      await waitText('Rascunho em andamento');
+      assert(await hasText('povos tradicionais'), 'o rascunho não mostra o tema');
+      await click('Continuar', { exact: true });
+      await waitFor(writerOpen, 'tela de escrita');
+      const text = await page.$eval('#redacao-text', e => e.value);
+      assert(text === TEXT, 'o texto restaurado é diferente do escrito');
+      assert(await hasText('Pausado'), 'o cronômetro devia voltar PARADO');
+      const s = await rSeconds();
+      assert(s < 90 * 60 && s > 85 * 60, `o tempo restante devia refletir o já usado (${await rClock()})`);
+      await click('Continuar cronômetro');
+      await waitFor(async () => !(await hasText('Pausado')), 'cronômetro voltar a correr');
+    });
+    await check('continuar escrevendo acrescenta ao texto restaurado e o rascunho é atualizado', async () => {
+      await typeText(' Por fim, a escola deve incluir saberes tradicionais no currículo.');
+      await hidePage();
+      await waitFor(async () => (await draftNow())?.text.endsWith('no currículo.'), 'rascunho atualizado');
+    });
+    await check('voltar do aparelho pergunta antes de sair, e sair guarda o rascunho', async () => {
+      await target.pressBack();
+      await waitText('Sair da redação?');
+      await target.pressBack();
+      await waitGone('Sair da redação?');
+      assert(await writerOpen(), 'o botão voltar fechou a escrita sem perguntar');
+      await target.pressBack();
+      await click('Sair e guardar rascunho');
+      await waitFor(async () => !(await writerOpen()), 'sair da escrita');
+      await waitText('Rascunho em andamento');
+      assert((await draftNow())?.text.endsWith('no currículo.'), 'o rascunho não ficou guardado ao sair');
+    });
+    await check('concluir: avaliação das 5 competências soma a nota e salva; o tema vai para "Feitas"', async () => {
+      await click('Continuar', { exact: true });
+      await waitFor(writerOpen, 'tela de escrita');
+      await click('Concluir redação');
+      await waitText('Autoavaliação');
+      for (const label of ['C1: 160', 'C2: 120', 'C3: 120', 'C4: 160', 'C5: 80']) await click(label, { exact: true });
+      assert(await page.$eval('[data-testid="redacao-total"]', e => e.textContent) === '640', 'a nota devia somar 640');
+      await typeInto('O que melhorar', 'Faltou detalhar o agente da proposta.');
+      await click('Salvar redação');
+      await waitFor(async () => !(await writerOpen()), 'fechar a escrita');
+      const rows = await redacaoRows();
+      const done = rows.find(r => r.completedAt !== null);
+      assert(done && done.estimatedScore === 640 && done.competencyScores.c5 === 80 && done.text.endsWith('no currículo.'), 'redação concluída gravada incorretamente');
+      assert(!rows.some(r => r.completedAt === null), 'sobrou rascunho depois de concluir');
+      assert(!(await hasText('Rascunho em andamento')), 'o aviso de rascunho devia sumir');
+      await waitText('Feitas · 1');
+      assert(await hasText('Todos · 42'), 'o tema feito devia sair da lista geral');
+    });
+    await check('"Feitas": mostra o tema e resetar pede confirmação, não apaga o histórico e dá para desfazer', async () => {
+      await click('Feitas ·');
+      await waitText('Estas redações já foram feitas');
+      assert(await hasText('desafios para a valorização'), 'tema feito ausente em "Feitas"');
+      await click('resetar todas');
+      await waitText('Resetar as feitas?');
+      await click('Sim, resetar');
+      await waitText('Lista de feitas zerada');
+      await waitText('Todos · 43');
+      assert((await redacaoRows()).length === 1, 'resetar as feitas apagou redações do histórico');
+      await click('Desfazer');
+      await waitText('Feitas · 1');
+    });
+
+    await check('modo papel: mostra o texto de apoio, o cronômetro só corre ao iniciar, e vira rascunho', async () => {
+      await click('Todos ·');
+      await click('Democratização do acesso ao cinema');
+      await click('Escrever no papel');
+      await waitFor(writerOpen, 'tela do papel');
+      await waitText('Texto de apoio');
+      assert(await hasText('Pronto para começar') && (await rClock()) === '90:00', 'o cronômetro do papel devia esperar o toque em iniciar');
+      assert(!(await draftNow()), 'não devia haver rascunho antes de iniciar');
+      await click('Iniciar cronômetro');
+      await sleep(1300);
+      const d = await waitFor(draftNow, 'rascunho do modo papel');
+      assert(d.notes.startsWith('[Modo papel]') && d.text === '', 'rascunho do papel incorreto');
+      await target.pressBack();
+      await click('Sair e guardar');
+      await waitText('Rascunho em andamento · papel');
+    });
+    await check('papel: o app morre e volta, o cronômetro retoma do tempo salvo, e "Salvar sem nota" conclui sem inventar nota', async () => {
+      await reload();
+      await openRedacao();
+      await waitText('Rascunho em andamento · papel');
+      await click('Continuar', { exact: true });
+      await waitFor(writerOpen, 'tela do papel');
+      assert(await hasText('Pausado'), 'o cronômetro do papel devia voltar parado');
+      await click('Concluir redação');
+      await waitText('Autoavaliação');
+      await click('Salvar sem nota');
+      await waitFor(async () => !(await writerOpen()), 'fechar o papel');
+      const done = (await redacaoRows()).find(r => r.themeId === 'enem-2019');
+      assert(done && done.completedAt !== null && done.estimatedScore === null && done.competencyScores === null, 'devia concluir sem nota');
+      assert(done.notes.startsWith('[Modo papel]'), 'perdeu a marca do modo papel');
+    });
+
+    await check('acabou o tempo: a avaliação abre sozinha e a redação não se perde', async () => {
+      await idb('redacaoSessions', 'put', {
+        id: 'e2e-timeup', themeId: 'enem-2020', themeTitle: 'O estigma associado às doenças mentais na sociedade brasileira',
+        startedAt: Date.now() - 3_600_000, lastSavedAt: Date.now() - 60_000, completedAt: null, durationMinutes: 90,
+        text: 'texto quase pronto', wordCount: 3, competencyScores: null, estimatedScore: null, notes: '', elapsedMs: 90 * 60_000 - 3000,
+      });
+      await reload();
+      await openRedacao();
+      await click('Continuar', { exact: true });
+      await waitFor(writerOpen, 'tela de escrita');
+      await click('Continuar cronômetro');
+      await waitText('Autoavaliação', 8000);
+      await click('Voltar ao texto');
+      await waitGone('Autoavaliação');
+      assert(await hasText('Tempo esgotado'), 'devia mostrar "Tempo esgotado"');
+      assert(await page.$eval('#redacao-text', e => e.value) === 'texto quase pronto', 'o texto se perdeu');
+      await click('Concluir redação');
+      await click('Salvar sem nota');
+      await waitFor(async () => !(await writerOpen()), 'fechar a escrita');
+    });
+
+    await check('histórico: média, melhor nota, gráfico de evolução, detalhe por competência e rascunhos que dá para continuar', async () => {
+      const mk = (id, daysAgo, score) => ({
+        id, themeId: 'enem-2018', themeTitle: 'Manipulação do comportamento do usuário pelo controle de dados na internet',
+        startedAt: Date.now() - daysAgo * 86_400_000 - 5_400_000, lastSavedAt: Date.now() - daysAgo * 86_400_000, completedAt: Date.now() - daysAgo * 86_400_000,
+        durationMinutes: 88, text: 'texto de teste', wordCount: 3,
+        competencyScores: { c1: score / 5, c2: score / 5, c3: score / 5, c4: score / 5, c5: score / 5 }, estimatedScore: score, notes: '',
+      });
+      await idb('redacaoSessions', 'put', mk('e2e-h1', 14, 400));
+      await idb('redacaoSessions', 'put', mk('e2e-h2', 7, 600));
+      await idb('redacaoSessions', 'put', mk('e2e-h3', 2, 800));
+      await reload();
+      await openRedacao();
+      await click('Histórico de redações');
+      await waitText('Média (últimas 3)');
+      assert(await hasText('Melhor nota'), 'melhor nota ausente');
+      assert(await page.$('svg[aria-label="Evolução da nota nas redações"]'), 'gráfico ausente');
+      const dots = await page.$$eval('svg[aria-label="Evolução da nota nas redações"] [role="button"]', e => e.length);
+      assert(dots === 4, `esperava 4 pontos (3 injetadas + a de 640), veio ${dots}`); // 640 do teste anterior
+      assert(await noHorizontalScroll(), 'rolagem horizontal no histórico');
+      await click('Manipulação do comportamento', { nth: 0 });
+      await waitText('Autoavaliação · 5 competências');
+      assert(await hasText('C5') && await hasText('Proposta'), 'detalhe por competência ausente');
+    });
+    await check('excluir uma redação pede confirmação e dá para DESFAZER (o texto volta inteiro)', async () => {
+      const before = (await redacaoRows()).length;
+      await click('Excluir redação', { nth: 0 });
+      await waitText('Excluir redação?');
+      await click('Sim, excluir');
+      await waitText('Redação excluída');
+      assert((await redacaoRows()).length === before - 1, 'a redação não foi excluída');
+      await click('Desfazer');
+      await waitFor(async () => (await redacaoRows()).length === before, 'redação de volta');
+    });
+
+    await check('telas da Redação sem rolagem lateral e com o cabeçalho da escrita inteiro em 320, 360, 390, 768 e 1280', async () => {
+      await target.pressBack(); // fecha o histórico
+      await idb('redacaoSessions', 'put', {
+        id: 'e2e-layout', themeId: 'enem-2017', themeTitle: 'Desafios para a formação educacional de surdos no Brasil',
+        startedAt: Date.now(), lastSavedAt: Date.now(), completedAt: null, durationMinutes: 5, text: TEXT, wordCount: 38,
+        competencyScores: null, estimatedScore: null, notes: '', elapsedMs: 5 * 60_000,
+      });
+      await reload();
+      for (const [w, h] of [[320, 568], [360, 640], [390, 844], [768, 1024], [1280, 800]]) {
+        await page.setViewport({ width: w, height: h, deviceScaleFactor: 1, isMobile: w < 768, hasTouch: w < 768 });
+        await sleep(400);
+        if (!(await writerOpen())) {
+          await openRedacao();
+          await click('Continuar', { exact: true });
+        }
+        await waitFor(writerOpen, `escrita em ${w}`);
+        assert(await noHorizontalScroll(), `rolagem horizontal na escrita a ${w}px`);
+        const inside = await page.evaluate(() => {
+          const vw = window.innerWidth;
+          return [...document.querySelectorAll('[data-testid="redacao-writer"] button')]
+            .slice(0, 6).every(b => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= vw; });
+        });
+        assert(inside, `botões do cabeçalho fora da tela a ${w}px`);
+        assert(await page.$('[data-testid="redacao-footer"]'), `rodapé "Concluir" ausente a ${w}px`);
+      }
+      await page.setViewport(MOBILE);
+      await sleep(500);
+      if (!(await writerOpen())) { await openRedacao(); await click('Continuar', { exact: true }); }
+      await target.pressBack();
+      await click('Sair e guardar rascunho');
+      await waitFor(async () => !(await writerOpen()), 'sair da escrita');
+    });
+  }
 
   // ── Layout / plataforma ──
   if (!isAndroid) {

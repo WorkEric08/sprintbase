@@ -17,6 +17,11 @@ const config: CapacitorConfig = {
       insetsHandling: 'native',
       initialViewportFitValueHint: 'cover',
     },
+    // Avisos do simulado (services/simuladoAlerts.ts): ícone e cor da notificação.
+    LocalNotifications: {
+      smallIcon: 'ic_stat_sprint',
+      iconColor: '#4f46e5',
+    },
     SplashScreen: {
       // A abertura do sistema é só um fundo liso preto (sem logo): ver res/values/styles.xml. A animação do logo é do
       // index.html e a abertura do sistema sai no primeiro quadro que a página pinta (script do index.html); a cor

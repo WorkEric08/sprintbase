@@ -63,6 +63,25 @@ O método gira em torno de três ideias:
 - **Calendário** dos últimos 4 meses, colorido pela sua **meta diária de blocos** (mínimo e máximo que você define). Toque em um dia para ver blocos, questões e acerto, e escreva uma **anotação** sobre ele.
 - A ofensiva pode ser desligada em Ajustes; o calendário continua aparecendo.
 
+### Simulado
+- Aba própria para treinar com o cronômetro da prova: **ENEM — Dia 1** (5 h 30, modo estrito, com redação), **ENEM — Dia 2** (5 h, modo estrito) e **Customizado** (de 1 h a 8 h, com modo estrito opcional).
+- O cronômetro usa o horário real e fica gravado: se o Android encerrar o app no meio da prova, ao reabrir o tempo continua certo.
+- **Avisos** quando faltar 1 hora, 30 minutos e 10 minutos, e quando o **tempo acabar**. No aplicativo Android eles são notificações agendadas no sistema, que chegam **mesmo com a tela bloqueada** (o Android pede a permissão de notificações ao começar). Se **Alarmes e lembretes** estiver desligado para o app (padrão no Android 14), o cronômetro mostra um botão para permitir, e os avisos passam a tocar na hora exata. Na versão web só aparecem com o app aberto.
+- A **tela fica ligada** durante a prova (você ainda pode bloqueá-la quando quiser).
+- Pausar (fora do modo estrito) para o relógio e cancela os avisos; retomar agenda tudo de novo.
+- Ao terminar ou encerrar, o **registro**: acertos por área (toque no número para digitar), nota da redação, controle do tempo e impressões. **Pular** guarda só o tempo, sem gabarito.
+- **Histórico**: média dos últimos 3 simulados, gráfico de evolução e linha do tempo com o detalhe de cada um. Excluir pede confirmação e dá para **desfazer**.
+- Em **Progresso**, o desempenho **por área** mostra a tendência (melhorando, estável ou piorando) e aponta a maior queda.
+
+### Redação
+- Aba para treinar a redação do ENEM: **43 temas** (35 de treino e 8 de edições do ENEM) com busca, filtro por eixo e a categoria **Feitas**. Os temas do ENEM mostram **"A conferir"**: o título e o ano ainda não foram conferidos na fonte oficial (INEP), e essa conferência é manual.
+- Dois modos: **Escrever aqui** (editor em tela cheia) ou **Escrever no papel** (mostra o texto de apoio e conta o tempo enquanto você escreve à mão).
+- **Cronômetro de 90 minutos** sempre à vista, com pausa. A tela fica ligada enquanto ele corre. Acabou o tempo: a autoavaliação abre sozinha e o texto não se perde.
+- O texto é **salvo sozinho**: 5 segundos depois de parar de digitar, a cada 30 segundos com o cronômetro correndo e, principalmente, **no instante em que o app vai para segundo plano**, porque o Android pode encerrar o app sem avisar. Se isso acontecer, o **rascunho aparece** na aba Redação com o texto e o tempo já usado, e dá para continuar de onde parou.
+- Apoio durante a escrita: texto de apoio do tema, as 5 competências e um checklist. Contador de palavras (ideal: 150 a 500).
+- **Autoavaliação** ao concluir: as 5 competências do ENEM de 0 a 200, somando a nota (0 a 1000). Também dá para **salvar sem nota**.
+- **Histórico**: média das 3 últimas e melhor nota, gráfico de evolução e linha do tempo com o detalhe por competência e o texto. Excluir redação ou descartar rascunho pede confirmação e dá para **desfazer**.
+
 ### Configurações
 - Seu nome.
 - Tema **claro** ou **escuro**, aplicado antes da tela carregar para não piscar.
@@ -79,7 +98,8 @@ O método gira em torno de três ideias:
 | Armazenamento local | [Dexie](https://dexie.org/) (IndexedDB) |
 | Seletor de cores | [react-colorful](https://github.com/omgovich/react-colorful) |
 | Ícones | [Font Awesome](https://fontawesome.com/), só os ícones usados, como SVG embutido (sem fonte; funciona offline) |
-| Aplicativo Android | [Capacitor](https://capacitorjs.com/) |
+| Aplicativo Android | [Capacitor](https://capacitorjs.com/), com o plugin oficial de notificações locais (usado só nos avisos do simulado) e dois plugins próprios em Java (cor das barras do sistema e tela ligada) |
+| Gráficos | SVG próprio (sem biblioteca de gráficos) |
 | Versão web instalável (PWA) | [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) |
 | Testes | [Vitest](https://vitest.dev/) (unitários) e [Puppeteer](https://pptr.dev/) (ponta a ponta, na web e no app) |
 
@@ -112,6 +132,7 @@ O app abre em [http://localhost:3001](http://localhost:3001). Como o servidor es
 | `npm test` | Roda os testes unitários |
 | `npm run e2e` | Teste ponta a ponta no navegador (veja abaixo para o aplicativo no celular) |
 | `npm run e2e:abertura` | Testa, no Chrome, a animação de abertura (quadros, duração, app lento, falhas); constrói o app antes |
+| `npm run e2e:simulado-nativo` | Testa, no Chrome com a ponte do Capacitor simulada, o que o Simulado e a Redação pedem ao Android (permissão, 4 avisos agendados, alarmes exatos, cancelar ao pausar/encerrar, tela ligada, gravar o rascunho ao ir para segundo plano) |
 | `npm run perf` | Mede a inicialização do app (tempo até a tela inicial pronta) e compara com medições salvas |
 | `npm run perf:abertura` | Mede quando a tela inicial fica pronta, contando do primeiro quadro da abertura, com a CPU 1×, 6×, 10× e 20× mais lenta |
 
@@ -135,7 +156,7 @@ Para abrir no Android Studio, abra a pasta `android/` e rode `npm run android:sy
 
 O app abre direto na tela inicial, com os dados já desenhados. O que foi feito para isso (medido com `npm run perf`, que simula um celular com CPU 4× mais lenta e 1.500 registros no banco):
 
-- **Ícones em SVG embutido**, só os 38 usados, no lugar da fonte do Font Awesome (155 KB de fonte e 100 KB de CSS que precisavam ser lidos antes de qualquer ícone aparecer).
+- **Ícones em SVG embutido**, só os 51 usados, no lugar da fonte do Font Awesome (155 KB de fonte e 100 KB de CSS que precisavam ser lidos antes de qualquer ícone aparecer).
 - **Leitura do banco antecipada**: começa quando o código é carregado, em paralelo com a montagem da interface, e o primeiro quadro já sai com as matérias desenhadas. Os registros de bloco (podem ser milhares) chegam logo depois da primeira pintura.
 - **Só o Ciclo no primeiro arquivo**: Progresso, Ajustes, Montar sprint, cronômetro e seletor de cores são carregados em segundo plano depois da primeira pintura, então abrem sem demora.
 - **Preact** no lugar do React nos builds: metade do JavaScript para o aparelho ler e compilar.
@@ -156,6 +177,55 @@ Ao abrir, o app mostra por 2 s o logo se desenhando: um cronômetro cujo ponteir
 - **Só para testes:** a duração padrão é `DURACAO_DA_ABERTURA_MS` (2000); a chave `sprint-abertura-ms` do localStorage a substitui, e com `0` a abertura nem entra (é o que o `npm run e2e` usa, para ela não segurar o toque). `npm run e2e:abertura` testa a duração de verdade.
 - **No Android:** a abertura do sistema fica preta, sem ícone (`sprint_splash_background`, igual ao `background_color` do manifest e ao fundo do WebView) e sai no primeiro quadro que a página pinta; a animação é da página. O que vem antes disso (do toque no ícone até o WebView pintar) é do sistema e não dá para medir pela web.
 
+## Simulado por dentro
+
+Decisões desta versão (2026-11-17), com o motivo, e as regras que não podem regredir.
+
+**Decisões**
+- **Relógio de horário real e sessão gravada.** O simulado em andamento fica em `settings` (`simulado_active`), e tudo (quanto falta, pausas, fim) é recalculado de horários reais (`utils/simulado.ts`). *Substitui* o app original, em que sair da aba perdia o simulado: aqui sair da aba, bloquear a tela ou o Android matar o processo não perde nada. A sessão **não entra no backup** (é do momento; restaurar um backup cancela os avisos agendados).
+- **Avisos = notificações locais agendadas** (`@capacitor/local-notifications`, só em `services/simuladoAlerts.ts`, carregado sob demanda e só no APK), porque o Android suspende o WebView com a tela apagada. Ids fixos: agendar de novo substitui, nunca duplica. Agendam ao começar e ao retomar; cancelam ao pausar, encerrar e ao salvar o registro. O app também avisa na tela (cartão no topo) quando o limite é cruzado com ele aberto.
+- **Quatro avisos, o último é o fim do tempo** (só como notificação: com a tela bloqueada ninguém veria o relógio zerar, e dentro do app a folha de registro já abre sozinha).
+- **Alarme exato só com a permissão.** Desde a versão 8.3 do plugin, agendar um aviso exato sem a permissão "Alarmes e lembretes" abre sozinho a tela de configurações do Android, a cada agendamento. Por isso o app pede alarme **inexato** por padrão (`isExactNotification: false`) e só pede exato quando a permissão já existe; o botão **Permitir alarmes exatos** do cronômetro leva a pessoa à tela do sistema, e ao voltar os avisos são reagendados.
+- **Tela ligada**: plugin próprio `KeepAwakePlugin.java` (`FLAG_KEEP_SCREEN_ON`), com a Wake Lock API como alternativa na web. Só enquanto o cronômetro corre (solta na pausa e no fim).
+- **Gráfico em SVG próprio** (`components/EvolutionChart.tsx`): o Recharts custaria ~100 KB para desenhar uma linha. A inicialização continua igual na medição (`npm run perf`: 283 → 273 ms; JavaScript inicial +3 KB).
+- **Guarda de navegação** (`contexts/NavigationGuardContext.tsx`): trocar de aba com o simulado na tela pede confirmação. Como o simulado não se perde ao sair, o texto diz isso. O botão voltar do aparelho não passa por ela: pede para encerrar.
+- **"Pular" no registro guarda o simulado sem gabarito** (aparece no histórico como "sem nota"). *Substitui* o descarte do original: cinco horas de prova não se perdem por um toque no voltar.
+- **A redação não conta como questão.** O original somava 1 questão errada no ENEM Dia 1, puxando o aproveitamento para baixo; a nota (0–1000) fica à parte.
+- **Só os 3 modelos que a tela mostra** (ENEM Dia 1, Dia 2, Customizado). PRF/PF e INSS existiam no código do original, mas a interface nunca os ofereceu.
+- **`useSimulados` virou parte do `AppDataContext`** (como `useSubjects` e `useBlockLogs`): uma fonte única, sem cópias que ficam velhas. Os simulados (dezenas de linhas) são lidos depois da primeira pintura.
+- **Modo desenvolvedor** (nome `DevInfo`): a tela de começar oferece velocidade ×12 ou ×60 (5 h 30 viram ~27 min ou ~5,5 min reais, e os avisos acompanham), e encerrar conta como concluído com a duração toda.
+
+**Regras para não regredir**
+- Nunca guardar "quanto falta" em memória: sempre derivar de `(sessão, agora)` (`remainingMs`). Um `setInterval` só serve para redesenhar.
+- O plugin de notificações **não pode ser devolvido por uma função `async`** (é um Proxy do Capacitor; o `await` o trata como "thenable" e nada é agendado). Cada função faz o próprio `import()` e usa o plugin ali mesmo. O teste `npm run e2e:simulado-nativo` e `utils/simuladoAlerts.test.ts` reprovam se isso voltar.
+- `@capacitor/local-notifications` não pode ser importado fora do serviço dos avisos (um teste confere), nem no primeiro arquivo do app.
+- A tela do cronômetro precisa caber sem rolagem a 320×568 (o e2e mede 320, 360, 390, 768 e 1280) e as caixas "Questões/Corretas" do registro ficam uma sob a outra abaixo de 360 px, para o número nunca ser cortado.
+- Excluir um simulado pede confirmação **e** dá para desfazer (7 s).
+- Quem mexer no registro: a redação tem `questionsTotal` 0; `overallPct` devolve `null` (não 0%) quando não há questões.
+
+## Redação por dentro
+
+Decisões desta versão (2026-11-17), com o motivo, e as regras que não podem regredir.
+
+**Decisões**
+- **O rascunho é a própria redação com `completedAt: null`** (formato do app original, tabela `redacaoSessions`), com um campo a mais, `elapsedMs`, que guarda o tempo de escrita já usado. O original ignora esse campo, então os dados vão e voltam entre as duas versões.
+- **Gravar ao ir para segundo plano** (`hooks/useAppPause.ts`: `appStateChange` do Capacitor no APK, mais `visibilitychange` e `pagehide`). *Substitui* o salvamento só de 5 s do original, que perdia tudo se o Android matasse o processo nesse intervalo. O cronômetro volta **parado** no tempo salvo (o tempo em que o app esteve morto não conta).
+- **Campo de texto não controlado** (`defaultValue`): o texto vive no próprio campo, então teclado, autocorreção e composição de palavras (IME) do celular nunca brigam com a interface (importa mais ainda porque o app publicado usa Preact).
+- **Escrita em tela cheia opaca** (como o sprint), em vez de dentro da aba: sem a barra de abas sobre o teclado e sem a tela de baixo aparecer. O botão voltar pergunta antes de sair e sair guarda o rascunho. Isso *substitui* a guarda de troca de aba que o original usava aqui.
+- **"Salvar sem nota"** na autoavaliação (o original obrigava a dar nota), e **"Voltar ao texto"** em vez de "Pular".
+- **Temas já feitos** (`useCompletedThemes`) passam do localStorage para `settings` (entram no backup). O valor antigo é copiado uma vez, se existir. Resetar a lista pede confirmação e dá para desfazer (o original usava `window.confirm`).
+- **Os temas do ENEM não foram alterados.** O arquivo `data/redacaoThemes.ts` é idêntico ao do app original e todos os temas do ENEM seguem com `verified: false`; a tela mostra "A conferir" neles. Conferir título e ano no portal do INEP e trocar para `verified: true` é um trabalho manual, que **não deve ser feito por IA**.
+- **Gráfico**: o mesmo `EvolutionChart` em SVG do Simulado (eixo até 1000). `useRedacao` virou parte do `AppDataContext` (`redacoes`, lidas depois da primeira pintura).
+- **Dois ajustes de interface** em relação ao original: tocar num tema abre direto a escolha do modo (sem o botão fixo no rodapé, que ficaria atrás da barra de abas), e o histórico mostra a data junto do título para ele não ficar espremido.
+
+**Regras para não regredir**
+- O campo de texto da redação **não pode virar controlado** (`value=`): quebra o IME e faz o cursor pular. Um teste confere.
+- Depois de concluída, nenhum salvamento de rascunho pode sobrescrever a redação (`doneRef` em `useRedacaoWriter`).
+- Não gravar rascunho vazio de uma redação que nunca existiu (abrir e sair não deixa lixo).
+- O rodapé com o botão **Concluir** sai da frente do teclado (`useKeyboardVisible`); o botão do cabeçalho continua disponível.
+- Nota = soma das 5 competências (0–1000), cada uma de 40 em 40. Redação "sem nota" e rascunho **não entram** nas médias.
+- Excluir redação e descartar rascunho: confirmação **e** desfazer.
+
 ## Estrutura do projeto
 
 ```
@@ -165,16 +235,17 @@ Ao abrir, o app mostra por 2 s o logo se desenhando: um cronômetro cujo ponteir
 ├── types.ts                # Tipos e constantes do domínio (matérias, blocos, registros)
 ├── db.ts                   # Banco de dados local (Dexie / IndexedDB)
 ├── components/             # Telas, modais e cartões da interface
-├── contexts/               # Contexto com a fonte única de dados do app
-├── hooks/                  # Hooks reutilizáveis (cronômetro, botão voltar, ofensiva)
-├── utils/                  # Lógica pura e testada (datas, ofensiva, calendário, backup)
-├── services/               # Serviços: PWA (só web) e saída da abertura animada
+├── contexts/               # Fonte única de dados do app e guarda de navegação entre abas
+├── data/                   # Conteúdo estático (modelos de simulado e temas de redação)
+├── hooks/                  # Hooks reutilizáveis (cronômetro, botão voltar, ofensiva, simulado, escrita da redação)
+├── utils/                  # Lógica pura e testada (datas, ofensiva, calendário, backup, simulado e redação)
+├── services/               # Serviços: PWA (só web), abertura animada, avisos do simulado e tela ligada
 ├── android/                # Projeto Android gerado pelo Capacitor
 ├── scripts/                # Scripts do APK, dos ícones e dos testes ponta a ponta
 └── public/                 # Arquivos estáticos (ícones)
 ```
 
-A navegação é organizada em três abas: **Ciclo**, **Progresso** e **Ajustes**. Todos os dados passam por um único contexto (`AppDataContext`), que atualiza a tela de imediato e grava no banco local em seguida.
+A navegação é organizada em cinco abas: **Ciclo**, **Simulado**, **Redação**, **Progresso** e **Ajustes**. Todos os dados passam por um único contexto (`AppDataContext`), que atualiza a tela de imediato e grava no banco local em seguida.
 
 ## Seus dados
 
@@ -190,6 +261,18 @@ Para não perder nada, use **Ajustes → Seus dados → Exportar**: o app gera u
 
 O Sprint Base é uma base enxuta, pensada para crescer aos poucos. Algumas ideias para as próximas versões:
 
-- Simulados cronometrados
-- Treino de redação
-- Revisão espaçada
+- Revisão espaçada, edital e desempenho por banca
+
+## O que não foi verificado
+
+Conferido por testes unitários, ponta a ponta no Chrome (web e build de produção) e com a ponte do Capacitor **simulada**, mas **não em aparelho Android real**:
+
+- **Avisos com a tela bloqueada.** O teste simulado prova que o app pede a permissão, cria o canal e agenda os 3 avisos com os horários certos; não prova que o Android os entrega com a tela apagada. Roteiro: em **Ajustes** use o nome `DevInfo`; em **Simulado** escolha **ENEM — Dia 1** com velocidade **×12** (≈ 27 min reais), toque em **Começar**, permita as notificações, **bloqueie a tela** e espere. Os avisos devem chegar aos ~22 min 30 s (1 hora), ~25 min (30 minutos) e ~26 min 40 s (10 minutos).
+- **Precisão dos avisos.** O alarme só é exato se **Alarmes e lembretes** estiver permitido para o app (no Android 14 vem desligado); sem isso o Android pode atrasar o aviso em alguns minutos com o aparelho parado. O botão **Permitir alarmes exatos** do cronômetro abre essa tela do sistema; o que o app pede ao Android é testado com a ponte simulada, mas a tela do sistema e o efeito no horário real não foram vistos em aparelho.
+- **Aviso de fim do tempo** (4º aviso) com a tela bloqueada: mesmo roteiro acima, ele deve chegar aos ~27 min 30 s.
+- **Tela ligada** (`FLAG_KEEP_SCREEN_ON`) durante o cronômetro, e voltar a apagar na pausa e no fim.
+- **Sobreviver ao Android matar o processo** no meio da prova (a lógica é testada; falta ver no aparelho) e a guarda de troca de aba no APK.
+- **Teclado numérico** e a rolagem da folha de registro com o teclado aberto, no WebView real.
+- **Redação no aparelho**: escrever um texto longo, bloquear a tela, **forçar o Android a encerrar o app** (Configurações → Apps → Sprint → Forçar parada, ou arrastar o app para fora dos recentes) e reabrir: o rascunho deve estar na aba Redação com o texto e o tempo. A ponte simulada prova que o app grava no evento `appStateChange`; não prova que o WebView termina de gravar antes de o Android encerrar o processo.
+- **Teclado, autocorreção e IME em texto longo** (várias centenas de palavras, com acentos, correção automática e sugestões) no WebView real, e a rolagem do campo com o teclado aberto.
+- O teste ponta a ponta `-- --target android` continua sem ter rodado (e o roteiro do Simulado fica de fora dele: a janela de permissão do sistema cobre o app).

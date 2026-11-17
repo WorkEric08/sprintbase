@@ -11,8 +11,10 @@ export const SettingsPanel = lazyScreen(() => import('./SettingsPanel'));
 export const SubjectFormView = lazyScreen(() => import('./SubjectFormView'));
 export const SprintBuilderView = lazyScreen(() => import('./SprintBuilderView'));
 export const SprintRunnerView = lazyScreen(() => import('./SprintRunnerView'));
+export const SimuladoView = lazyScreen(() => import('./SimuladoView'));
+export const RedacaoView = lazyScreen(() => import('./RedacaoView'));
 
-const ALL = [ProgressView, SettingsPanel, SubjectFormView, SprintBuilderView, SprintRunnerView];
+const ALL = [ProgressView, SettingsPanel, SubjectFormView, SprintBuilderView, SprintRunnerView, SimuladoView, RedacaoView];
 
 /**
  * Carrega todas as telas em segundo plano, quando o navegador está ocioso (logo depois da primeira pintura).

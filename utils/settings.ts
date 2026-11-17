@@ -9,6 +9,8 @@ export const SETTING_KEYS = {
   calendarGoal: 'calendar_goal',     // JSON {min, max}
   dayNotes: 'day_notes',             // JSON { 'YYYY-MM-DD': 'texto' }
   welcomeBackShown: 'welcome_back_shown', // 'YYYY-MM-DD' do último "bem-vindo de volta"
+  completedRedacaoThemes: 'completed_redacao_themes', // JSON ['enem-2022', ...]: temas de redação já feitos
+  simuladoActive: 'simulado_active',      // JSON da sessão do simulado em andamento (ver utils/simulado.ts)
 } as const;
 
 export function parseJsonSetting<T>(raw: string | undefined, isValid: (v: unknown) => v is T, fallback: T): T {

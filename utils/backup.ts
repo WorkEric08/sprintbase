@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { SETTING_KEYS } from './settings';
 
 /**
  * Backup completo dos dados do app em um único arquivo JSON.
@@ -41,6 +42,8 @@ export async function createBackup(now: Date = new Date()): Promise<BackupFile> 
   await db.transaction('r', db.tables, async () => {
     for (const table of db.tables) tables[table.name] = await table.toArray();
   });
+  // O simulado em andamento é do momento (relógio e avisos do aparelho): num backup restaurado depois, só confundiria.
+  tables.settings = (tables.settings ?? []).filter(row => (row as { key?: string }).key !== SETTING_KEYS.simuladoActive);
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
@@ -89,10 +92,34 @@ function validateSetting(row: unknown, i: number) {
   if (typeof row.value !== 'string') throw bad('valor');
 }
 
+function validateSimulado(row: unknown, i: number) {
+  const bad = (why: string) => new BackupError(`Simulado #${i + 1} inválido (${why}).`);
+  if (!isObject(row)) throw bad('formato');
+  if (typeof row.id !== 'string' || !row.id) throw bad('sem id');
+  if (typeof row.completedAt !== 'number') throw bad('sem data');
+  if (typeof row.actualDurationMinutes !== 'number') throw bad('duração');
+  if (!Array.isArray(row.areaResults)) throw bad('resultado por área');
+  for (const a of row.areaResults) {
+    if (!isObject(a) || typeof a.areaName !== 'string'
+      || typeof a.questionsTotal !== 'number' || typeof a.questionsCorrect !== 'number') throw bad('resultado por área');
+  }
+}
+
+function validateRedacao(row: unknown, i: number) {
+  const bad = (why: string) => new BackupError(`Redação #${i + 1} inválida (${why}).`);
+  if (!isObject(row)) throw bad('formato');
+  if (typeof row.id !== 'string' || !row.id) throw bad('sem id');
+  if (typeof row.themeId !== 'string') throw bad('sem tema');
+  if (typeof row.startedAt !== 'number') throw bad('sem data');
+  if (typeof row.text !== 'string') throw bad('texto');
+}
+
 const ROW_VALIDATORS: Record<string, (row: unknown, i: number) => void> = {
   subjects: validateSubject,
   blockLogs: validateBlockLog,
   settings: validateSetting,
+  simuladoRecords: validateSimulado,
+  redacaoSessions: validateRedacao,
 };
 
 /** Lê e valida o texto de um arquivo de backup. Lança `BackupError` se não servir. */

@@ -1,7 +1,9 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { AppDataProvider, useAppData } from './contexts/AppDataContext';
 import CicloView from './components/CicloView';
-import { ProgressView, SettingsPanel, preloadScreens } from './components/screens';
+import { ProgressView, RedacaoView, SettingsPanel, SimuladoView, preloadScreens } from './components/screens';
+import { NavigationGuardProvider, useNavigationGuard } from './contexts/NavigationGuardContext';
+import { useActiveSimulado } from './hooks/useActiveSimulado';
 import WelcomeBackCard from './components/WelcomeBackCard';
 import { useStreak } from './hooks/useStreak';
 import { daysBetween } from './utils/dateUtils';
@@ -10,7 +12,7 @@ import { hideSplash } from './utils/native';
 import { mark } from './utils/perf';
 import { SETTING_KEYS } from './utils/settings';
 import { shouldShowWelcomeBack } from './utils/streakUtils';
-import Icon from './components/Icon';
+import Icon, { IconName } from './components/Icon';
 
 /**
  * Para adicionar um módulo novo (Simulado, Redação...), basta incluir uma entrada aqui:
@@ -18,6 +20,8 @@ import Icon from './components/Icon';
  */
 const TABS = [
   { id: 'ciclo', label: 'Ciclo', icon: 'rotate', View: CicloView },
+  { id: 'simulado', label: 'Simulado', icon: 'stopwatch', View: SimuladoView },
+  { id: 'redacao', label: 'Redação', icon: 'pen', View: RedacaoView },
   { id: 'progresso', label: 'Progresso', icon: 'chart-line', View: ProgressView },
   { id: 'config', label: 'Ajustes', icon: 'gear', View: SettingsPanel },
 ] as const;
@@ -35,10 +39,27 @@ const Logo: React.FC = () => (
   <img src="/icon.svg" alt="" width={32} height={32} className="w-8 h-8 rounded-xl shrink-0 shadow-md shadow-indigo-500/30" />
 );
 
+/** Ícone da aba, com um pontinho quando há algo em andamento (o texto só para leitores de tela). */
+const TabIcon: React.FC<{ name: IconName; className: string; badge: boolean }> = ({ name, className, badge }) => (
+  <span className="relative inline-flex">
+    <Icon name={name} className={className} />
+    {badge && (
+      <>
+        <span aria-hidden="true" className="absolute -top-0.5 -right-1.5 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-gray-50 dark:border-gray-950" />
+        <span className="sr-only">em andamento</span>
+      </>
+    )}
+  </span>
+);
+
 const Shell: React.FC = () => {
   const { loading, userName, settings, setSetting } = useAppData();
   const { streak, today, enabled: streakEnabled, ready: streakReady } = useStreak();
   const [activeTab, setActiveTab] = useState<TabId>('ciclo');
+  const { requestNavigation } = useNavigationGuard();
+  // Um simulado em andamento (ou encerrado e ainda sem registro) é sinalizado na aba: ele continua correndo mesmo fora dela.
+  const simuladoPending = useActiveSimulado() !== null;
+  const goTo = (tab: TabId) => { if (tab !== activeTab) requestNavigation(() => setActiveTab(tab)); };
   const [showWelcome, setShowWelcome] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
@@ -95,14 +116,15 @@ const Shell: React.FC = () => {
           {TABS.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => goTo(tab.id)}
+              aria-label={tab.label} // em telas médias a barra lateral só mostra o ícone
               className={`w-full flex items-center justify-center lg:justify-start gap-3 py-3 lg:px-4 rounded-xl transition-all ${
                 activeTab === tab.id
                   ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
                   : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
               }`}
             >
-              <Icon name={tab.icon} className="text-base w-5 text-center" />
+              <TabIcon name={tab.icon} className="text-base w-5 text-center" badge={tab.id === 'simulado' && simuladoPending} />
               <span className="hidden lg:block text-xs font-black uppercase tracking-widest">{tab.label}</span>
             </button>
           ))}
@@ -144,12 +166,12 @@ const Shell: React.FC = () => {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => goTo(tab.id)}
             className={`flex-1 flex flex-col items-center gap-1 transition-all active:scale-90 ${
               activeTab === tab.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'
             }`}
           >
-            <Icon name={tab.icon} className="text-xl" />
+            <TabIcon name={tab.icon} className="text-xl" badge={tab.id === 'simulado' && simuladoPending} />
             <span className="text-[9px] font-semibold">{tab.label}</span>
           </button>
         ))}
@@ -160,7 +182,9 @@ const Shell: React.FC = () => {
 
 const App: React.FC = () => (
   <AppDataProvider>
-    <Shell />
+    <NavigationGuardProvider>
+      <Shell />
+    </NavigationGuardProvider>
   </AppDataProvider>
 );
 

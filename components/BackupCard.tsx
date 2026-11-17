@@ -3,6 +3,7 @@ import {
   BackupError, BackupFile, BackupSummary, backupFileName, createBackup, parseBackup,
   restoreBackup, serializeBackup, summarizeBackup,
 } from '../utils/backup';
+import { cancelSimuladoAlerts } from '../services/simuladoAlerts';
 import { saveTextFile } from '../utils/files';
 import { isNative } from '../utils/platform';
 import ConfirmDialog from './ConfirmDialog';
@@ -59,6 +60,8 @@ const BackupCard: React.FC = () => {
     setBusy(true);
     try {
       await restoreBackup(pending.backup);
+      // Restaurar apaga o simulado em andamento (se houver): os avisos já agendados no sistema não podem sobrar.
+      await cancelSimuladoAlerts();
       // Recarrega para todo o app reler o banco (contexto, tema, nome...).
       window.location.reload();
     } catch (err) {

@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // Plugins próprios precisam ser registrados antes do super.onCreate.
         registerPlugin(SystemBarColorsPlugin.class);
+        registerPlugin(KeepAwakePlugin.class);
         super.onCreate(savedInstanceState);
         // Cor das barras já na primeira imagem (a última escolhida, antes de o JavaScript rodar).
         SystemBarColorsPlugin.applySaved(this);
