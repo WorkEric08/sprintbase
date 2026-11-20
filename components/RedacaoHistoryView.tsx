@@ -10,6 +10,7 @@ import ConfirmDialog from './ConfirmDialog';
 import EvolutionChart from './EvolutionChart';
 import Icon from './Icon';
 import UndoBar from './UndoBar';
+import { legible } from '../utils/color';
 
 interface Props {
   /** Da mais recente para a mais antiga (rascunhos incluídos). */
@@ -23,7 +24,7 @@ interface Props {
 }
 
 const CARD = 'bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800';
-const CAPTION = 'text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const CAPTION = 'text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 const THEME_BY_ID = new Map(REDACAO_THEMES.map(t => [t.id, t]));
 
 /** Histórico de redações: média, gráfico de evolução e linha do tempo (com os rascunhos, que dá para continuar). */
@@ -45,12 +46,12 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col animate-slide-up">
+    <div role="dialog" aria-modal="true" aria-label="Histórico de redações" className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col animate-slide-up">
       <div className="flex items-center gap-3 px-4 pb-3 safe-top border-b border-gray-100 dark:border-gray-800 shrink-0">
         <button
           onClick={onClose}
           aria-label="Voltar"
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:scale-90 transition-transform"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:scale-90 transition-transform"
         >
           <Icon name="arrow-left" className="text-sm" />
         </button>
@@ -65,10 +66,10 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
           {sessions.length === 0 ? (
             <div className="flex flex-col items-center py-20 gap-3 text-center">
               <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Icon name="pen" className="text-gray-300 dark:text-gray-600 text-xl" />
+                <Icon name="pen" className="text-gray-500 dark:text-gray-400 text-xl" />
               </div>
-              <p className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Nenhuma redação realizada</p>
-              <p className="text-xs text-gray-400 dark:text-gray-600 max-w-[240px] leading-relaxed">
+              <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Nenhuma redação realizada</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[240px] leading-relaxed">
                 As redações que você fizer na aba Redação aparecem aqui, com a evolução da nota.
               </p>
             </div>
@@ -80,17 +81,17 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
                     <p className={CAPTION}>Média (últimas 3)</p>
                     <p className="text-3xl font-black text-violet-600 dark:text-violet-400 mt-1">{avg.recent}</p>
                     {avg.previous !== null ? (
-                      <p className={`text-[11px] font-bold mt-1 ${avg.recent > avg.previous ? 'text-green-600' : avg.recent < avg.previous ? 'text-red-500' : 'text-gray-400'}`}>
+                      <p className={`text-[11px] font-bold mt-1 ${avg.recent > avg.previous ? 'text-green-700 dark:text-green-400' : avg.recent < avg.previous ? 'text-red-700 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {avg.recent > avg.previous ? '↑' : avg.recent < avg.previous ? '↓' : '→'} vs {avg.previous} anteriores
                       </p>
                     ) : (
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">de {MAX_SCORE}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">de {MAX_SCORE}</p>
                     )}
                   </div>
                   <div className={`${CARD} p-4`}>
                     <p className={CAPTION}>Melhor nota</p>
                     <p className="text-3xl font-black text-gray-800 dark:text-white mt-1">{avg.best}</p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">de {MAX_SCORE}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">de {MAX_SCORE}</p>
                   </div>
                 </div>
               )}
@@ -111,12 +112,12 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
                     <div key={c.key}>
                       <div className="flex items-start justify-between gap-3 mb-1">
                         <span className="text-xs text-gray-600 dark:text-gray-400">
-                          <span className="font-black text-violet-500 mr-1.5">{c.label}</span>{c.short}
+                          <span className="font-black text-violet-600 mr-1.5 dark:text-violet-400">{c.label}</span>{c.short}
                           {byCompetency.weakest?.key === c.key && (
-                            <span className="ml-2 text-[9px] font-black uppercase tracking-widest text-red-500">ponto fraco</span>
+                            <span className="ml-2 text-[9px] font-black uppercase tracking-widest text-red-700 dark:text-red-400">ponto fraco</span>
                           )}
                         </span>
-                        <span className="text-xs font-black shrink-0" style={{ color: competencyColor(c.avg) }}>{c.avg}/200</span>
+                        <span className="text-xs font-black shrink-0" style={{ color: legible(competencyColor(c.avg)) }}>{c.avg}/200</span>
                       </div>
                       <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${(c.avg / 200) * 100}%`, backgroundColor: competencyColor(c.avg) }} />
@@ -136,7 +137,7 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
               )}
 
               <div className="space-y-2">
-                <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Linha do tempo</p>
+                <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Linha do tempo</p>
                 {sessions.map(s => {
                   const open = expanded === s.id;
                   const theme = THEME_BY_ID.get(s.themeId);
@@ -164,28 +165,28 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
                                   {AXIS_LABELS[theme.axis]}
                                 </span>
                               )}
-                              <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatDuration(s.durationMinutes)}</span>
-                              {paper && <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full uppercase tracking-wider">Papel</span>}
+                              <span className="text-[11px] text-gray-500 dark:text-gray-400">{formatDuration(s.durationMinutes)}</span>
+                              {paper && <span className="text-[9px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full uppercase tracking-wider">Papel</span>}
                               {draft && <span className="text-[9px] font-black text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 px-2 py-0.5 rounded-full uppercase tracking-wider">Rascunho</span>}
                             </div>
                           </div>
                           <div className="text-right shrink-0">
                             {s.estimatedScore !== null ? (
                               <>
-                                <p className="text-xl font-black" style={{ color: scoreColor(s.estimatedScore) }}>{s.estimatedScore}</p>
-                                <p className="text-[9px] text-gray-400 dark:text-gray-500">de {MAX_SCORE}</p>
+                                <p className="text-xl font-black" style={{ color: legible(scoreColor(s.estimatedScore)) }}>{s.estimatedScore}</p>
+                                <p className="text-[9px] text-gray-500 dark:text-gray-400">de {MAX_SCORE}</p>
                               </>
                             ) : !draft && (
-                              <p className="text-xs font-bold text-gray-400 dark:text-gray-500">sem nota</p>
+                              <p className="text-xs font-bold text-gray-500 dark:text-gray-400">sem nota</p>
                             )}
                           </div>
-                          <Icon name={open ? 'chevron-up' : 'chevron-down'} className="text-[10px] text-gray-300 dark:text-gray-600" />
+                          <Icon name={open ? 'chevron-up' : 'chevron-down'} className="text-[10px] text-gray-500 dark:text-gray-400" />
                         </button>
 
                         <button
                           onClick={() => setConfirming(s)}
                           aria-label={`Excluir redação: ${s.themeTitle}`}
-                          className="w-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 text-gray-300 dark:text-gray-600 hover:text-red-400 active:text-red-500 transition-colors shrink-0"
+                          className="w-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:text-red-400 active:text-red-500 transition-colors shrink-0"
                         >
                           <Icon name="trash" className="text-[12px]" />
                         </button>
@@ -212,9 +213,9 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
                                   <div key={c.key}>
                                     <div className="flex items-start justify-between gap-3 mb-1">
                                       <span className="text-xs text-gray-600 dark:text-gray-400">
-                                        <span className="font-black text-violet-500 mr-1.5">{c.label}</span>{c.short}
+                                        <span className="font-black text-violet-600 mr-1.5 dark:text-violet-400">{c.label}</span>{c.short}
                                       </span>
-                                      <span className="text-xs font-black shrink-0" style={{ color: competencyColor(v) }}>{v}/200</span>
+                                      <span className="text-xs font-black shrink-0" style={{ color: legible(competencyColor(v)) }}>{v}/200</span>
                                     </div>
                                     <div className="h-1 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                                       <div className="h-full rounded-full" style={{ width: `${(v / 200) * 100}%`, backgroundColor: competencyColor(v) }} />
@@ -224,12 +225,12 @@ const RedacaoHistoryView: React.FC<Props> = ({ sessions, onSave, onDelete, onRes
                               })}
                             </div>
                           ) : !draft && (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">Salva sem autoavaliação.</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Salva sem autoavaliação.</p>
                           )}
 
                           <p className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                            {!paper && <span className="flex items-center gap-1.5"><Icon name="pen" className="text-[10px] text-violet-500" />{s.wordCount} palavras</span>}
-                            <span className="flex items-center gap-1.5"><Icon name="clock" className="text-[10px] text-violet-500" />{formatDuration(s.durationMinutes)}</span>
+                            {!paper && <span className="flex items-center gap-1.5"><Icon name="pen" className="text-[10px] text-violet-600 dark:text-violet-400" />{s.wordCount} palavras</span>}
+                            <span className="flex items-center gap-1.5"><Icon name="clock" className="text-[10px] text-violet-600 dark:text-violet-400" />{formatDuration(s.durationMinutes)}</span>
                           </p>
 
                           {notes && (

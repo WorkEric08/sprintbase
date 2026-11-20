@@ -5,6 +5,7 @@ import {
   DEFAULT_GOAL, GoalLevel, GoalSettings, MONTHS_COUNT, MONTH_NAMES,
   buildDayMap, buildMonthCells, formatDetailDate, formatShortDate, getGoalLevel, getMonthsToShow, isValidGoal, levelColor,
 } from '../utils/calendar';
+import { legible } from '../utils/color';
 import { isDevModeUser } from '../utils/devMode';
 import { SETTING_KEYS, isStringRecord, parseJsonSetting } from '../utils/settings';
 import CalendarGoalModal from './CalendarGoalModal';
@@ -19,9 +20,9 @@ const SIM_CYCLE: GoalLevel[] = ['none', 'below', 'partial', 'full'];
 
 /** Cor do número dentro da célula (as células coloridas usam o mesmo `levelColor` da legenda). */
 function cellText(level: GoalLevel, isFuture: boolean): string {
-  if (isFuture) return 'text-gray-200 dark:text-gray-800';
+  if (isFuture) return 'text-gray-500 dark:text-gray-400';
   switch (level) {
-    case 'none': return 'text-gray-400 dark:text-gray-600';
+    case 'none': return 'text-gray-500 dark:text-gray-400';
     case 'below': return 'text-violet-900'; // fundo claro (#c4b5fd) nos dois temas
     default: return 'text-white';
   }
@@ -113,13 +114,13 @@ const HeatmapView: React.FC = () => {
     <div className="space-y-4" data-testid="calendar">
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
         <div className="flex items-center justify-between px-4 pt-4 mb-3">
-          <span className="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">
+          <span className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
             Últimos {MONTHS_COUNT} meses
           </span>
           <button
             onClick={() => setShowGoal(true)}
             aria-label="Meta de blocos do calendário"
-            className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-600 hover:text-violet-500 active:scale-90 transition-all"
+            className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-violet-500 active:scale-90 transition-all"
           >
             <Icon name="gear" className="text-[10px]" />
           </button>
@@ -128,13 +129,13 @@ const HeatmapView: React.FC = () => {
         {isDevMode && (
           <div className="mx-4 mb-3 rounded-xl border border-dashed border-amber-300 dark:border-amber-700/70 bg-amber-50/60 dark:bg-amber-900/10 p-3 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
                 <Icon name="flask" className="text-[10px]" /> Simulação (dev)
               </span>
               <button
                 onClick={() => setSimEnabled(v => !v)}
                 className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-colors ${
-                  simEnabled ? 'bg-amber-500 text-white' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                  simEnabled ? 'bg-amber-700 text-white' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                 }`}
               >
                 {simEnabled ? 'Ativo' : 'Inativo'}
@@ -148,7 +149,7 @@ const HeatmapView: React.FC = () => {
                       key={m}
                       onClick={() => setSimMode(m)}
                       className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors ${
-                        simMode === m ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-amber-200 dark:border-amber-800'
+                        simMode === m ? 'bg-amber-700 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-amber-200 dark:border-amber-800'
                       }`}
                     >
                       {m === 'paint' ? 'Pintar cor' : 'Definir hoje'}
@@ -156,12 +157,12 @@ const HeatmapView: React.FC = () => {
                   ))}
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[9px] font-bold text-amber-600/80 dark:text-amber-500/80">
+                  <span className="text-[9px] font-bold text-amber-700/80 dark:text-amber-500/80">
                     Hoje simulado: <span className="font-black">{simToday ? formatShortDate(simToday) : '—'}</span>
                   </span>
                   <button
                     onClick={() => { setSimToday(null); setSimLevels({}); }}
-                    className="px-2.5 py-1 rounded-full bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 text-[9px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 active:scale-90 transition-transform"
+                    className="px-2.5 py-1 rounded-full bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 text-[9px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400 active:scale-90 transition-transform"
                   >
                     Resetar
                   </button>
@@ -184,16 +185,16 @@ const HeatmapView: React.FC = () => {
                   <div className="flex items-center justify-between mb-2.5">
                     <span className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-tight">
                       {MONTH_NAMES[month]}
-                      <span className="text-gray-400 dark:text-gray-600 ml-1 font-bold">{year}</span>
+                      <span className="text-gray-500 dark:text-gray-400 ml-1 font-bold">{year}</span>
                     </span>
                     {activeDays > 0 && (
-                      <span className="text-[9px] font-black text-violet-400 dark:text-violet-500 uppercase tracking-widest">{activeDays}d</span>
+                      <span className="text-[9px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest">{activeDays}d</span>
                     )}
                   </div>
 
                   <div className="grid grid-cols-7 gap-[3px] mb-[3px]">
                     {DAY_LABELS.map((label, i) => (
-                      <div key={i} className="text-center text-[8px] font-black text-gray-300 dark:text-gray-700 uppercase">{label}</div>
+                      <div key={i} className="text-center text-[8px] font-black text-gray-500 dark:text-gray-400 uppercase">{label}</div>
                     ))}
                   </div>
 
@@ -255,7 +256,7 @@ const HeatmapView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 px-4 pb-4 mt-2 justify-end">
-          <span className="text-[8px] font-bold text-gray-300 dark:text-gray-700 uppercase tracking-widest mr-1">Meta</span>
+          <span className="text-[8px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mr-1">Meta</span>
           {(['below', 'partial', 'full'] as GoalLevel[]).map(level => (
             <div key={level} className="w-3 h-3 rounded-[3px]" style={{ backgroundColor: levelColor(level) }} />
           ))}
@@ -271,13 +272,13 @@ const HeatmapView: React.FC = () => {
             <div className="p-4 space-y-4">
               <div className="flex items-start justify-between">
                 <div>
-                  {selected.isToday && <span className="inline-block text-[9px] font-black text-violet-500 uppercase tracking-widest mb-0.5">Hoje</span>}
+                  {selected.isToday && <span className="inline-block text-[9px] font-black text-violet-600 uppercase tracking-widest mb-0.5 dark:text-violet-400">Hoje</span>}
                   <p className="text-sm font-black text-gray-800 dark:text-gray-100 leading-snug capitalize">{formatDetailDate(selected.dateKey)}</p>
                 </div>
                 <button
                   onClick={() => setSelectedKey(null)}
                   aria-label="Fechar detalhe do dia"
-                  className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-600 active:scale-90 transition-all shrink-0 ml-3"
+                  className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 hover:text-gray-600 active:scale-90 transition-all shrink-0 ml-3 dark:text-gray-400"
                 >
                   <Icon name="times" className="text-[10px]" />
                 </button>
@@ -288,11 +289,11 @@ const HeatmapView: React.FC = () => {
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-violet-50 dark:bg-violet-900/20 rounded-xl p-3 text-center">
                       <p className="text-2xl font-black text-violet-600 dark:text-violet-400 leading-none mb-1">{selected.blocks}</p>
-                      <p className="text-[8px] font-black text-violet-400 dark:text-violet-600 uppercase tracking-widest">{selected.blocks === 1 ? 'Bloco' : 'Blocos'}</p>
+                      <p className="text-[8px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest">{selected.blocks === 1 ? 'Bloco' : 'Blocos'}</p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3 text-center">
                       <p className="text-2xl font-black text-gray-700 dark:text-gray-200 leading-none mb-1">{selected.questions}</p>
-                      <p className="text-[8px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Questões</p>
+                      <p className="text-[8px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Questões</p>
                     </div>
                     <div
                       className="rounded-xl p-3 text-center"
@@ -300,13 +301,13 @@ const HeatmapView: React.FC = () => {
                     >
                       <p
                         className="text-2xl font-black leading-none mb-1"
-                        style={{ color: selectedAccuracy === null ? '#9ca3af' : selectedAccuracy >= 70 ? '#16a34a' : '#dc2626' }}
+                        style={{ color: legible(selectedAccuracy === null ? '#9ca3af' : selectedAccuracy >= 70 ? '#16a34a' : '#dc2626') }}
                       >
                         {selectedAccuracy !== null ? `${selectedAccuracy}%` : '—'}
                       </p>
                       <p
                         className="text-[8px] font-black uppercase tracking-widest"
-                        style={{ color: selectedAccuracy === null ? '#9ca3af' : selectedAccuracy >= 70 ? '#16a34a' : '#dc2626', opacity: 0.7 }}
+                        style={{ color: legible(selectedAccuracy === null ? '#9ca3af' : selectedAccuracy >= 70 ? '#16a34a' : '#dc2626'), opacity: 0.7 }}
                       >
                         Acerto
                       </p>
@@ -318,7 +319,7 @@ const HeatmapView: React.FC = () => {
                       <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${selectedAccuracy}%`, backgroundColor: selectedAccuracy >= 70 ? '#22c55e' : '#ef4444' }} />
                       </div>
-                      <p className="text-[9px] font-bold text-gray-400 dark:text-gray-600">{selected.correct} de {selected.questions} corretas</p>
+                      <p className="text-[9px] font-bold text-gray-500 dark:text-gray-400">{selected.correct} de {selected.questions} corretas</p>
                     </div>
                   )}
 
@@ -334,7 +335,7 @@ const HeatmapView: React.FC = () => {
                     return (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ backgroundColor: `${levelColor(level)}22` }}>
                         <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: levelColor(level) }} />
-                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: levelColor(level) }}>{labels[level]}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: legible(levelColor(level)) }}>{labels[level]}</p>
                       </div>
                     );
                   })()}
@@ -352,7 +353,7 @@ const HeatmapView: React.FC = () => {
                       placeholder="Anote algo sobre esse dia…"
                       maxLength={NOTE_MAX}
                       rows={3}
-                      className="w-full bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 resize-none focus:outline-none focus:border-violet-400 dark:focus:border-violet-600 transition-colors"
+                      className="w-full bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none focus:outline-none focus:border-violet-400 dark:focus:border-violet-600 transition-colors"
                     />
                     <div className="flex gap-2">
                       <button
@@ -376,10 +377,10 @@ const HeatmapView: React.FC = () => {
                         <p className="text-xs text-violet-800 dark:text-violet-200 leading-relaxed whitespace-pre-wrap break-words" data-testid="day-note">
                           {dayNotes[selected.dateKey]}
                         </p>
-                        <p className="text-[9px] font-black text-violet-400 dark:text-violet-600 uppercase tracking-widest mt-1.5">Toque para editar</p>
+                        <p className="text-[9px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest mt-1.5">Toque para editar</p>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 py-1 text-gray-300 dark:text-gray-700 hover:text-violet-400 transition-colors">
+                      <div className="flex items-center gap-2 py-1 text-gray-500 dark:text-gray-400 hover:text-violet-400 transition-colors">
                         <Icon name="pen" className="text-[9px]" />
                         <span className="text-[11px] font-bold uppercase tracking-widest">Adicionar anotação</span>
                       </div>

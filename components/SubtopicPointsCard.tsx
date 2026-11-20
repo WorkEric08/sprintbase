@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useAppData } from '../contexts/AppDataContext';
 import { MIN_SUBTOPIC_QUESTIONS, SubtopicStat, strongAndWeak } from '../utils/performance';
 import Icon from './Icon';
+import { legible } from '../utils/color';
 
 const color = (pct: number) => (pct >= 70 ? '#16a34a' : pct >= 50 ? '#d97706' : '#ef4444');
 
@@ -9,7 +10,7 @@ const List: React.FC<{ title: string; icon: 'trophy' | 'circle-exclamation'; ton
   <div data-testid={testId} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800/50 overflow-hidden">
     <div className="px-4 pt-4 pb-2 flex items-center gap-2">
       <Icon name={icon} className={`text-xs ${tone}`} />
-      <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{title}</p>
+      <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">{title}</p>
     </div>
     <div className="divide-y divide-gray-50 dark:divide-gray-800/60">
       {items.map(s => (
@@ -17,9 +18,9 @@ const List: React.FC<{ title: string; icon: 'trophy' | 'circle-exclamation'; ton
           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.subjectColor }} />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-gray-800 dark:text-gray-200 leading-snug">{s.subtopic}</p>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500">{s.subjectTitle} · {s.totalCorrect}/{s.totalQuestions} certas</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">{s.subjectTitle} · {s.totalCorrect}/{s.totalQuestions} certas</p>
           </div>
-          <span className="text-sm font-black shrink-0" style={{ color: color(s.accuracy) }}>{s.accuracy}%</span>
+          <span className="text-sm font-black shrink-0" style={{ color: legible(color(s.accuracy)) }}>{s.accuracy}%</span>
         </div>
       ))}
     </div>
@@ -34,12 +35,12 @@ const SubtopicPointsCard: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Por subtópico</h3>
+      <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Por subtópico</h3>
       <div className="grid gap-3 md:grid-cols-2">
-        {strong.length > 0 && <List title="Pontos fortes" icon="trophy" tone="text-green-600" items={strong} testId="strong-points" />}
-        {weak.length > 0 && <List title="Pontos fracos" icon="circle-exclamation" tone="text-red-500" items={weak} testId="weak-points" />}
+        {strong.length > 0 && <List title="Pontos fortes" icon="trophy" tone="text-green-700 dark:text-green-400" items={strong} testId="strong-points" />}
+        {weak.length > 0 && <List title="Pontos fracos" icon="circle-exclamation" tone="text-red-700 dark:text-red-400" items={weak} testId="weak-points" />}
       </div>
-      <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-snug">Só entram subtópicos com {MIN_SUBTOPIC_QUESTIONS} questões ou mais, registrados no fim dos blocos. Forte: acerto de 70% ou mais.</p>
+      <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-snug">Só entram subtópicos com {MIN_SUBTOPIC_QUESTIONS} questões ou mais, registrados no fim dos blocos. Forte: acerto de 70% ou mais.</p>
     </div>
   );
 };

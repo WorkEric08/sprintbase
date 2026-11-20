@@ -7,6 +7,7 @@ import { formatDuration } from '../utils/format';
 import { Outcome } from '../utils/simulado';
 import { PASS_PCT, pctOf } from '../utils/simuladoStats';
 import Icon from './Icon';
+import { legible } from '../utils/color';
 
 interface Props {
   session: SimuladoSession;
@@ -25,9 +26,9 @@ const TIME_CONTROL_LABELS: Record<number, string> = {
   5: 'Controle total',
 };
 
-const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const LABEL = 'text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 const STEP_BTN =
-  'w-9 h-9 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-500 disabled:opacity-30 active:scale-90 transition-transform shrink-0';
+  'w-9 h-9 rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-500 disabled:opacity-30 active:scale-90 transition-transform shrink-0 dark:text-gray-400';
 
 const REDACAO = 'Redação';
 
@@ -104,13 +105,13 @@ const PostSimuladoModal: React.FC<Props> = ({ session, outcome, onSave, onSkip }
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-base font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">Registrar simulado</h3>
-              <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mt-0.5">
+              <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mt-0.5">
                 {template.name} · {formatDuration(outcome.actualMinutes)}{!outcome.completed && ' (interrompido)'}
               </p>
             </div>
             <button
               onClick={skip}
-              className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest hover:text-indigo-500 transition-colors px-2 py-1 shrink-0"
+              className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:text-indigo-500 transition-colors px-2 py-1 shrink-0"
             >
               Pular
             </button>
@@ -120,7 +121,7 @@ const PostSimuladoModal: React.FC<Props> = ({ session, outcome, onSave, onSkip }
         <div className="px-5 py-4 space-y-6 pb-8">
           {overall !== null && (
             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-4 text-center border border-indigo-100 dark:border-indigo-900/30">
-              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1">Aproveitamento geral</p>
+              <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mb-1 dark:text-indigo-400">Aproveitamento geral</p>
               <p className="text-4xl font-black text-indigo-600 dark:text-indigo-400">{overall}%</p>
               <p className="text-xs text-indigo-400 mt-0.5">{totalCorrect} de {totalQuestions} questões</p>
             </div>
@@ -140,7 +141,7 @@ const PostSimuladoModal: React.FC<Props> = ({ session, outcome, onSave, onSkip }
                         <span className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-tight">{r.areaName}</span>
                       </div>
                       {pct !== null && !isRedacao && (
-                        <span className="text-sm font-black shrink-0" style={{ color: pct >= PASS_PCT ? '#16a34a' : '#ef4444' }}>{pct}%</span>
+                        <span className="text-sm font-black shrink-0" style={{ color: legible(pct >= PASS_PCT ? '#16a34a' : '#ef4444') }}>{pct}%</span>
                       )}
                     </div>
 
@@ -164,7 +165,7 @@ const PostSimuladoModal: React.FC<Props> = ({ session, outcome, onSave, onSkip }
                       <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3">
                         {([['Questões', 'questionsTotal'], ['Corretas', 'questionsCorrect']] as const).map(([label, field]) => (
                           <div key={field} className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-                            <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">{label}</p>
+                            <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">{label}</p>
                             <div className="flex items-center justify-between gap-1">
                               <button
                                 onClick={() => setField(idx, field, r[field] - 1)}
@@ -215,8 +216,8 @@ const PostSimuladoModal: React.FC<Props> = ({ session, outcome, onSave, onSkip }
                   aria-pressed={timeControl === score}
                   className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all active:scale-95 border-2 ${
                     timeControl === score
-                      ? 'border-transparent bg-indigo-500 text-white shadow-md'
-                      : 'border-gray-100 dark:border-gray-800 text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/40'
+                      ? 'border-transparent bg-indigo-600 text-white shadow-md'
+                      : 'border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40'
                   }`}
                 >
                   {score}
@@ -238,7 +239,7 @@ const PostSimuladoModal: React.FC<Props> = ({ session, outcome, onSave, onSkip }
               onChange={e => setPerception(e.target.value)}
               placeholder="Dificuldades, pontos de atenção, sensação geral…"
               rows={3}
-              className="w-full bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 resize-none focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700 transition-colors"
+              className="w-full bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700 transition-colors"
             />
           </div>
 
@@ -249,7 +250,7 @@ const PostSimuladoModal: React.FC<Props> = ({ session, outcome, onSave, onSkip }
             <Icon name="check" />
             Salvar registro
           </button>
-          <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 text-center leading-snug -mt-3">
+          <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 text-center leading-snug -mt-3">
             Pular guarda só o tempo, sem gabarito. O simulado fica no histórico.
           </p>
         </div>

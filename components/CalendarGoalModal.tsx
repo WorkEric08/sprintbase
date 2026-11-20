@@ -43,9 +43,9 @@ const CalendarGoalModal: React.FC<Props> = ({ current, onSave, onClose }) => {
         <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
           <div>
             <h3 className="text-base font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">Meta de blocos</h3>
-            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mt-0.5">Define as cores do calendário</p>
+            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-0.5">Define as cores do calendário</p>
           </div>
-          <button onClick={onClose} aria-label="Fechar" className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 active:scale-90 transition-transform">
+          <button onClick={onClose} aria-label="Fechar" className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 active:scale-90 transition-transform dark:text-gray-400">
             <Icon name="times" className="text-[11px]" />
           </button>
         </div>
@@ -54,14 +54,14 @@ const CalendarGoalModal: React.FC<Props> = ({ current, onSave, onClose }) => {
           <div className="space-y-5">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="goal-min" className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Mínimo diário</label>
+                <label htmlFor="goal-min" className="text-[10px] font-black text-gray-500 uppercase tracking-widest dark:text-gray-400">Mínimo diário</label>
                 <span className="text-sm font-black text-violet-600 dark:text-violet-400">{min} {plural(min)}</span>
               </div>
               <RangeSlider id="goal-min" min={1} max={MIN_GOAL_LIMIT} value={min} onChange={changeMin} color="#7c3aed" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="goal-max" className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Máximo diário</label>
+                <label htmlFor="goal-max" className="text-[10px] font-black text-gray-500 uppercase tracking-widest dark:text-gray-400">Máximo diário</label>
                 <span className="text-sm font-black text-violet-800 dark:text-violet-300">{max} {plural(max)}</span>
               </div>
               <RangeSlider id="goal-max" min={1} max={MAX_GOAL_LIMIT} value={max} onChange={changeMax} color="#5b21b6" />
@@ -69,12 +69,12 @@ const CalendarGoalModal: React.FC<Props> = ({ current, onSave, onClose }) => {
           </div>
 
           <div className="space-y-2">
-            <p className="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Legenda</p>
+            <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Legenda</p>
             <div className="flex items-center gap-3">
               <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800/50 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-gray-700 dark:text-gray-300">Sem estudo</p>
-                <p className="text-[9px] text-gray-400 dark:text-gray-600">0 blocos</p>
+                <p className="text-[9px] text-gray-500 dark:text-gray-400">0 blocos</p>
               </div>
             </div>
             {legend.map(r => (
@@ -82,7 +82,7 @@ const CalendarGoalModal: React.FC<Props> = ({ current, onSave, onClose }) => {
                 <div className="w-7 h-7 rounded-lg shrink-0" style={{ backgroundColor: levelColor(r.level) }} />
                 <div>
                   <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{r.label}</p>
-                  <p className="text-[9px] text-gray-400 dark:text-gray-600">{r.range}</p>
+                  <p className="text-[9px] text-gray-500 dark:text-gray-400">{r.range}</p>
                 </div>
               </div>
             ))}

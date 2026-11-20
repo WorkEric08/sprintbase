@@ -11,9 +11,9 @@ const CIRCUMFERENCE = 2 * Math.PI * 45;
 
 /** Anel de progresso dos cronômetros (bloco de estudo e pausa). */
 const TimerRing: React.FC<Props> = ({ fraction, color, children }) => (
-  <div className="relative flex items-center justify-center w-72 h-72">
+  <div className="relative flex items-center justify-center timer-ring-box shrink-0">
     <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-      <circle className="text-gray-100 dark:text-gray-900 stroke-current" strokeWidth="4" fill="transparent" r="45" cx="50" cy="50" />
+      <circle className="text-gray-100 dark:text-gray-400 stroke-current" strokeWidth="4" fill="transparent" r="45" cx="50" cy="50" />
       <circle
         className="transition-all duration-300 ease-linear"
         stroke={color}

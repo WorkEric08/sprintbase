@@ -32,7 +32,7 @@ const RedacaoSupportSheet: React.FC<Props> = ({ theme, onClose }) => {
           <div className="w-10 h-1 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3 md:hidden" />
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-base font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">Apoio de escrita</h3>
-            <button onClick={onClose} className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest hover:text-violet-500 px-2 py-1 shrink-0">
+            <button onClick={onClose} className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:text-violet-500 px-2 py-1 shrink-0">
               Fechar
             </button>
           </div>
@@ -41,13 +41,13 @@ const RedacaoSupportSheet: React.FC<Props> = ({ theme, onClose }) => {
         <div className="px-5 py-4 space-y-5 pb-8">
           {theme.context && (
             <div className="bg-violet-50 dark:bg-violet-900/10 rounded-2xl p-4 border border-violet-100 dark:border-violet-900/30 space-y-1.5">
-              <p className="text-[9px] font-black text-violet-500 dark:text-violet-400 uppercase tracking-widest">Sobre o tema</p>
+              <p className="text-[9px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest">Sobre o tema</p>
               <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{theme.context}</p>
             </div>
           )}
 
           <div className="space-y-2">
-            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">5 competências do ENEM</p>
+            <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">5 competências do ENEM</p>
             {COMPETENCIES.map(c => (
               <div key={c.key} className="bg-gray-50 dark:bg-gray-800/40 rounded-xl p-3 space-y-0.5">
                 <p className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-tight">{c.label}: {c.title}</p>
@@ -57,7 +57,7 @@ const RedacaoSupportSheet: React.FC<Props> = ({ theme, onClose }) => {
           </div>
 
           <div className="space-y-2">
-            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Checklist de escrita</p>
+            <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Checklist de escrita</p>
             {CHECKLIST_ITEMS.map((item, i) => (
               <button
                 key={item}
@@ -71,7 +71,7 @@ const RedacaoSupportSheet: React.FC<Props> = ({ theme, onClose }) => {
                 }`}>
                   {checked.has(i) && <Icon name="check" className="text-white text-[9px]" />}
                 </span>
-                <span className={`text-xs leading-relaxed ${checked.has(i) ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-700 dark:text-gray-300'}`}>{item}</span>
+                <span className={`text-xs leading-relaxed ${checked.has(i) ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-700 dark:text-gray-300'}`}>{item}</span>
               </button>
             ))}
           </div>

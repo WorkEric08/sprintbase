@@ -12,7 +12,7 @@ const hex = (s: string) => s.toLowerCase();
 describe('cor de fundo do tema', () => {
   it('claro = gray-50 e escuro = gray-950 do Tailwind, que o tailwind.config.js redefine como preto puro', () => {
     expect(THEME_BACKGROUND).toEqual({ light: '#f9fafb', dark: '#000000' });
-    expect(read('tailwind.config.js')).toContain("colors: { gray: { 950: '#000000' } }");
+    expect(read('tailwind.config.js')).toContain("gray: { 500: '#5f6877', 950: '#000000' }");
     expect(hex(read('index.css'))).toContain('background-color: #000000;');
   });
 
@@ -46,7 +46,7 @@ describe('cor de fundo do tema', () => {
   it('a barra inferior do app e a tela cheia do sprint usam o mesmo fundo (gray-50 / gray-950)', () => {
     expect(read('App.tsx')).toMatch(/<nav className="md:hidden[^"]*bg-gray-50 dark:bg-gray-950/);
     // O fundo opaco do sprint é do runner (dono da tela cheia); bloco e pausa são só o conteúdo.
-    expect(read('components/SprintRunnerView.tsx')).toMatch(/data-testid="sprint-runner" className="[^"]*bg-gray-50 dark:bg-gray-950/);
+    expect(read('components/SprintRunnerView.tsx')).toMatch(/data-testid="sprint-runner" role="dialog" aria-modal="true" aria-label="[^"]+" className="[^"]*bg-gray-50 dark:bg-gray-950/);
   });
 
   it('bloco e pausa não criam tela cheia própria (senão a troca de etapa deixa a tela inicial à mostra)', () => {

@@ -14,8 +14,8 @@ interface Props {
 type Step = 'pick' | 'confirm-enem' | 'custom';
 
 const PALETTE = ['#6366f1', '#3b82f6', '#06b6d4', '#10b981', '#84cc16', '#f59e0b', '#f97316', '#ef4444', '#ec4899', '#8b5cf6'];
-const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
-const FIELD = 'w-full bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm font-bold text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 placeholder:font-normal focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700';
+const LABEL = 'text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
+const FIELD = 'w-full bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm font-bold text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700';
 
 /**
  * Escolha do edital: ENEM (matérias da Matriz de Referência) ou Personalizado (matérias que você nomeia).
@@ -72,7 +72,7 @@ const EditalPickerModal: React.FC<Props> = ({ onClose }) => {
         <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 pt-3 pb-3 px-5 border-b border-gray-100 dark:border-gray-800">
           <div className="w-10 h-1 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-3 md:hidden" />
           <div className="flex items-center gap-3">
-            <button onClick={back} aria-label="Voltar" className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 active:scale-90 transition-transform shrink-0">
+            <button onClick={back} aria-label="Voltar" className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 active:scale-90 transition-transform shrink-0 dark:text-gray-400">
               <Icon name="arrow-left" className="text-sm" />
             </button>
             <h2 className="text-base font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">{title}</h2>
@@ -95,7 +95,7 @@ const EditalPickerModal: React.FC<Props> = ({ onClose }) => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{o.kicker}</span>
+                      <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">{o.kicker}</span>
                       {activeId === o.id && (
                         <span className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full">Ativo</span>
                       )}
@@ -103,7 +103,7 @@ const EditalPickerModal: React.FC<Props> = ({ onClose }) => {
                     <p className="font-black text-gray-800 dark:text-gray-100 text-sm uppercase tracking-tight">{o.title}</p>
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-snug">{o.text}</p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center shrink-0 text-indigo-500">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center shrink-0 text-indigo-600 dark:text-indigo-400">
                     <Icon name={o.icon} />
                   </div>
                 </div>
@@ -112,7 +112,7 @@ const EditalPickerModal: React.FC<Props> = ({ onClose }) => {
             {activeId && (
               <button
                 onClick={() => { removeSetting(SETTING_KEYS.selectedEdital); onClose(); }}
-                className="w-full py-3 text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest"
+                className="w-full py-3 text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest"
               >
                 Não usar edital (as matérias continuam)
               </button>
@@ -136,7 +136,7 @@ const EditalPickerModal: React.FC<Props> = ({ onClose }) => {
                   <div key={es.name} className="flex items-center gap-3 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
                     <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: es.color }} />
                     <span className="flex-1 min-w-0 text-sm font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">{es.name}</span>
-                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 shrink-0 text-right">
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 shrink-0 text-right">
                       {es.weight}% · {found ? 'já existe' : 'será criada'}
                     </span>
                   </div>
@@ -152,7 +152,7 @@ const EditalPickerModal: React.FC<Props> = ({ onClose }) => {
                 <Icon name="check" />
                 Aplicar ENEM
               </button>
-              <button onClick={() => applyEnem(false)} className="w-full py-3 text-gray-400 dark:text-gray-500 text-[11px] font-black uppercase tracking-widest">
+              <button onClick={() => applyEnem(false)} className="w-full py-3 text-gray-500 dark:text-gray-400 text-[11px] font-black uppercase tracking-widest">
                 Selecionar sem criar matérias
               </button>
             </div>
@@ -235,7 +235,7 @@ const EditalPickerModal: React.FC<Props> = ({ onClose }) => {
               <Icon name="check" />
               Salvar e aplicar
             </button>
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed text-center">
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed text-center">
               As matérias que ainda não existem no Ciclo são criadas (blocos de 50 min, meta de 20); as que já existem só são ligadas ao edital.
             </p>
           </div>

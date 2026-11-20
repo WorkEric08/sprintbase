@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useAppData } from '../contexts/AppDataContext';
 import { AreaStat, PASS_PCT, Trend, computeAreaStats, recommend } from '../utils/simuladoStats';
 import Icon, { IconName } from './Icon';
+import { legible } from '../utils/color';
 
 const TREND: Record<Trend, { icon: IconName; color: string; label: string }> = {
   up: { icon: 'arrow-trend-up', color: '#16a34a', label: 'Melhorando' },
@@ -27,9 +28,9 @@ const Row: React.FC<{ stat: AreaStat }> = ({ stat }) => {
         </div>
       </div>
       <div className="text-right shrink-0 ml-2">
-        <p className="text-sm font-black" style={{ color: stat.lastScore >= PASS_PCT ? '#16a34a' : '#ef4444' }}>{stat.lastScore}%</p>
+        <p className="text-sm font-black" style={{ color: legible(stat.lastScore >= PASS_PCT ? '#16a34a' : '#ef4444') }}>{stat.lastScore}%</p>
         {/* o estado nunca é só a cor: o texto diz a tendência */}
-        <p className="text-[10px] font-bold" style={{ color: t.color }}>
+        <p className="text-[10px] font-bold" style={{ color: legible(t.color) }}>
           {stat.delta !== null ? `${stat.delta > 0 ? '+' : ''}${stat.delta}pp` : t.label}
         </p>
       </div>
@@ -48,7 +49,7 @@ const SimuladoAreaCard: React.FC = () => {
   return (
     <div data-testid="simulado-area-card" className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800/50 overflow-hidden">
       <div className="px-4 pt-4 pb-3 border-b border-gray-50 dark:border-gray-800/60">
-        <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Simulados · desempenho por área</p>
+        <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Simulados · desempenho por área</p>
         <p className="text-sm font-black text-gray-700 dark:text-gray-300 mt-0.5">
           Baseado em {simulados.length} {simulados.length === 1 ? 'simulado' : 'simulados'}
         </p>

@@ -83,7 +83,7 @@ const SprintRunnerView: React.FC<Props> = ({ items, onClose }) => {
   }
 
   return createPortal(
-    <div data-testid="sprint-runner" className="fixed inset-0 z-[60] overflow-hidden bg-gray-50 dark:bg-gray-950">
+    <div data-testid="sprint-runner" role="dialog" aria-modal="true" aria-label="Sprint em andamento" className="fixed inset-0 z-[60] overflow-hidden bg-gray-50 dark:bg-gray-950">
       {screen}
     </div>,
     document.body

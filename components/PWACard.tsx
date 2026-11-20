@@ -4,7 +4,7 @@ import { applyUpdate, checkForUpdate, installApp } from '../services/pwa';
 import { isNative } from '../utils/platform';
 import Icon from './Icon';
 
-const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const LABEL = 'text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 const BTN = 'w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 font-black text-xs uppercase tracking-widest transition-all active:scale-95';
 
 /**
@@ -48,7 +48,7 @@ const PWACard: React.FC = () => {
 
       {installed && (
         <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
-          <Icon name="circle-check" className="text-green-500 mr-1.5" />
+          <Icon name="circle-check" className="text-green-700 mr-1.5 dark:text-green-400" />
           Rodando como app instalado.
         </p>
       )}
@@ -56,7 +56,7 @@ const PWACard: React.FC = () => {
       {supported && (needRefresh ? (
         <button
           onClick={() => { void applyUpdate(); }}
-          className={`${BTN} border-green-500 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400`}
+          className={`${BTN} border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400`}
         >
           <Icon name="arrows-rotate" />
           Nova versão — atualizar agora
@@ -65,7 +65,7 @@ const PWACard: React.FC = () => {
         <button
           onClick={() => { void handleCheck(); }}
           disabled={checking}
-          className={`${BTN} border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 disabled:opacity-60`}
+          className={`${BTN} border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 disabled:opacity-60`}
         >
           <Icon name="arrows-rotate" className={checking ? 'animate-spin' : undefined} />
           {checking ? 'Verificando…' : 'Verificar atualizações'}

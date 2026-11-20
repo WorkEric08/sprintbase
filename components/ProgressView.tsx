@@ -13,6 +13,7 @@ import SimuladoAreaCard from './SimuladoAreaCard';
 import SubtopicPointsCard from './SubtopicPointsCard';
 import StreakWidget from './StreakWidget';
 import Icon from './Icon';
+import { legible } from '../utils/color';
 
 const PERIODS: { id: Period; label: string }[] = [
   { id: 'day', label: 'Dia' },
@@ -24,7 +25,7 @@ const RING_RADIUS = 42;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 const CARD = 'bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800/50';
-const CAPTION = 'text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const CAPTION = 'text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 
 function accuracyColor(pct: number | null): string {
   if (pct === null) return '#9ca3af';
@@ -97,12 +98,12 @@ const ProgressView: React.FC = () => {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-4xl font-black text-gray-800 dark:text-white leading-none">{overall.pct}%</span>
-            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1">Concluído</span>
+            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-1">Concluído</span>
           </div>
         </div>
         <div className="mt-3 text-center">
           <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Progresso geral</h2>
-          <p className="text-sm text-gray-400 dark:text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {subjects.length === 0 ? 'Nenhuma matéria cadastrada' : `${overall.done} de ${overall.total} blocos`}
           </p>
         </div>
@@ -112,7 +113,7 @@ const ProgressView: React.FC = () => {
 
       {/* Seletor de período */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Métricas</h3>
+        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Métricas</h3>
         <div className="flex bg-gray-100 dark:bg-gray-800/80 rounded-xl p-0.5">
           {PERIODS.map(p => (
             <button
@@ -120,8 +121,8 @@ const ProgressView: React.FC = () => {
               onClick={() => setPeriod(p.id)}
               className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
                 period === p.id
-                  ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                  : 'text-gray-400 dark:text-gray-500'
+                  ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-300 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               {p.label}
@@ -134,7 +135,7 @@ const ProgressView: React.FC = () => {
       <div className="grid grid-cols-3 gap-3">
         <div className={`${CARD} p-4`}>
           <div className="flex items-center gap-1.5 mb-3">
-            <Icon name="hourglass-half" className="text-indigo-500 text-[10px]" />
+            <Icon name="hourglass-half" className="text-indigo-600 text-[10px] dark:text-indigo-400" />
             <span className={CAPTION}>Tempo</span>
           </div>
           <p className="text-xl sm:text-2xl font-black text-gray-800 dark:text-white leading-none">{formatMinutes(metrics.minutes)}</p>
@@ -142,7 +143,7 @@ const ProgressView: React.FC = () => {
 
         <div className={`${CARD} p-4`}>
           <div className="flex items-center gap-1.5 mb-3">
-            <Icon name="bolt" className="text-indigo-500 text-[10px]" />
+            <Icon name="bolt" className="text-indigo-600 text-[10px] dark:text-indigo-400" />
             <span className={CAPTION}>Blocos</span>
           </div>
           <p className="text-xl sm:text-2xl font-black text-gray-800 dark:text-white leading-none">
@@ -152,14 +153,14 @@ const ProgressView: React.FC = () => {
 
         <div className={`${CARD} p-4`}>
           <div className="flex items-center gap-1.5 mb-3">
-            <Icon name="bullseye" className="text-indigo-500 text-[10px]" />
+            <Icon name="bullseye" className="text-indigo-600 text-[10px] dark:text-indigo-400" />
             <span className={CAPTION}>Acerto</span>
           </div>
-          <p className="text-xl sm:text-2xl font-black leading-none" style={{ color: accuracyColor(metrics.accuracy) }}>
+          <p className="text-xl sm:text-2xl font-black leading-none" style={{ color: legible(accuracyColor(metrics.accuracy)) }}>
             {metrics.accuracy !== null ? `${metrics.accuracy}%` : '—'}
           </p>
           {metrics.questions > 0 && (
-            <p className="text-[9px] font-bold text-gray-400 dark:text-gray-600 mt-1">{metrics.questions} questões</p>
+            <p className="text-[9px] font-bold text-gray-500 dark:text-gray-400 mt-1">{metrics.questions} questões</p>
           )}
         </div>
       </div>
@@ -167,14 +168,14 @@ const ProgressView: React.FC = () => {
       {/* Distribuição por tipo de bloco (só quando há mais de um tipo) */}
       {usedTypes.length > 1 && (
         <div className={`${CARD} p-4 space-y-2`}>
-          <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Distribuição</p>
+          <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Distribuição</p>
           {usedTypes.map(t => {
             const pct = Math.round((metrics.typeCounts[t] / metrics.blocks) * 100);
             return (
               <div key={t} className="space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400">{BLOCK_TYPE_LABELS[t]}</span>
-                  <span className="text-[10px] font-black" style={{ color: BLOCK_TYPE_COLORS[t] }}>{pct}%</span>
+                  <span className="text-[10px] font-black" style={{ color: legible(BLOCK_TYPE_COLORS[t]) }}>{pct}%</span>
                 </div>
                 <div className="h-1 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                   <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: BLOCK_TYPE_COLORS[t] }} />
@@ -195,7 +196,7 @@ const ProgressView: React.FC = () => {
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
                   <span className="text-sm font-bold text-gray-700 dark:text-gray-200 truncate">{s.title}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 dark:text-gray-600 shrink-0 ml-2">
+                <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-500 dark:text-gray-400 shrink-0 ml-2">
                   <span>{s.blocks} / {s.blockCount} blocos</span>
                   <span>·</span>
                   <span>{formatMinutes(s.minutes)}</span>
@@ -214,7 +215,7 @@ const ProgressView: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="py-10 text-center text-gray-400 dark:text-gray-600 text-sm border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
+        <div className="py-10 text-center text-gray-500 dark:text-gray-400 text-sm border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
           Nenhuma atividade neste período
         </div>
       )}
@@ -228,7 +229,7 @@ const ProgressView: React.FC = () => {
 
       {/* Calendário de estudos */}
       <div className="space-y-3 pt-2">
-        <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Calendário</h3>
+        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Calendário</h3>
         <HeatmapView />
       </div>
     </div>

@@ -111,17 +111,17 @@ const SimuladoRunnerView: React.FC<Props> = ({ session, alerts, onAllowExact, is
     <div className="max-w-xl mx-auto space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Iniciado às {startedLabel}</p>
+          <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Iniciado às {startedLabel}</p>
           <h2 className="text-xl font-black text-gray-800 dark:text-gray-100 tracking-tight">{template.name}</h2>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           {template.strictMode && (
-            <span className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-full text-[10px] font-black text-red-500 uppercase tracking-widest">
+            <span className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-full text-[10px] font-black text-red-700 uppercase tracking-widest dark:text-red-400">
               <Icon name="lock" className="text-[9px]" /> Estrito
             </span>
           )}
           {session.speed > 1 && (
-            <span className="bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">
+            <span className="bg-amber-100 dark:bg-amber-900/30 px-3 py-1 rounded-full text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">
               Dev ×{session.speed}
             </span>
           )}
@@ -136,7 +136,7 @@ const SimuladoRunnerView: React.FC<Props> = ({ session, alerts, onAllowExact, is
           aria-label={`${formatHMS(secondsLeft)} restantes`}
         >
           <svg className="w-full h-full -rotate-90 absolute" viewBox="0 0 200 200" aria-hidden="true">
-            <circle cx="100" cy="100" r="90" fill="none" stroke="currentColor" className="text-gray-100 dark:text-gray-800" strokeWidth="6" />
+            <circle cx="100" cy="100" r="90" fill="none" stroke="currentColor" className="text-gray-100 dark:text-gray-400" strokeWidth="6" />
             <circle
               cx="100" cy="100" r="90" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE} strokeDashoffset={strokeOffset}
@@ -151,7 +151,7 @@ const SimuladoRunnerView: React.FC<Props> = ({ session, alerts, onAllowExact, is
             >
               {formatHMS(secondsLeft)}
             </span>
-            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
               {paused ? 'Pausado' : 'restantes'}
             </span>
           </div>
@@ -170,13 +170,13 @@ const SimuladoRunnerView: React.FC<Props> = ({ session, alerts, onAllowExact, is
             ))}
           </div>
         )}
-        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
           {Math.round(progress * 100)}% concluído
         </p>
       </div>
 
       {isNative && alerts.status === 'denied' && (
-        <p className="flex items-start gap-2 text-[11px] font-bold text-amber-600 dark:text-amber-400 leading-snug">
+        <p className="flex items-start gap-2 text-[11px] font-bold text-amber-700 dark:text-amber-400 leading-snug">
           <Icon name="bell-slash" className="mt-0.5" />
           Avisos com a tela bloqueada desligados. Para recebê-los, permita as notificações do Sprint nas configurações do Android.
         </p>
@@ -184,7 +184,7 @@ const SimuladoRunnerView: React.FC<Props> = ({ session, alerts, onAllowExact, is
 
       {isNative && alerts.status === 'on' && !alerts.exact && (
         <div className="flex items-start gap-3 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/40 p-3">
-          <Icon name="bell" className="mt-0.5 text-amber-600 dark:text-amber-400" />
+          <Icon name="bell" className="mt-0.5 text-amber-700 dark:text-amber-400" />
           <div className="flex-1 min-w-0 space-y-2">
             <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300 leading-snug">
               Com a tela bloqueada o Android pode atrasar os avisos em alguns minutos. Para eles tocarem na hora, permita
@@ -192,7 +192,7 @@ const SimuladoRunnerView: React.FC<Props> = ({ session, alerts, onAllowExact, is
             </p>
             <button
               onClick={onAllowExact}
-              className="px-4 py-2 rounded-xl bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform"
+              className="px-4 py-2 rounded-xl bg-amber-700 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform"
             >
               Permitir alarmes exatos
             </button>
@@ -213,7 +213,7 @@ const SimuladoRunnerView: React.FC<Props> = ({ session, alerts, onAllowExact, is
         )}
         <button
           onClick={() => setShowExit(true)}
-          className="w-full py-3 text-gray-400 dark:text-gray-500 font-black text-[11px] uppercase tracking-widest hover:text-red-500 transition-colors"
+          className="w-full py-3 text-gray-500 dark:text-gray-400 font-black text-[11px] uppercase tracking-widest hover:text-red-500 transition-colors"
         >
           Encerrar simulado
         </button>

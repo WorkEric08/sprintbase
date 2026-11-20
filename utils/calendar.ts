@@ -39,7 +39,7 @@ export function levelColor(level: GoalLevel): string {
   switch (level) {
     case 'none': return '#e5e7eb';
     case 'below': return '#c4b5fd';
-    case 'partial': return '#a855f7';
+    case 'partial': return '#9333ea'; // roxo mais fechado que o #a855f7 antigo: o número branco da célula passa de 4,5:1
     case 'full': return '#7c3aed';
   }
 }

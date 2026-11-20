@@ -49,22 +49,22 @@ const ReviewStatusCard: React.FC = () => {
       <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="w-full p-4 text-left space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Revisão espaçada</p>
+            <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Revisão espaçada</p>
             <p className="text-sm font-black text-gray-700 dark:text-gray-300 mt-0.5">
               {groups.pending.length === 0 ? 'Nada pendente hoje' : `${groups.pending.length} ${groups.pending.length === 1 ? 'revisão pendente' : 'revisões pendentes'}`}
             </p>
           </div>
-          <Icon name={open ? 'chevron-up' : 'chevron-down'} className="text-[10px] text-gray-300 dark:text-gray-600 mt-1.5 shrink-0" />
+          <Icon name={open ? 'chevron-up' : 'chevron-down'} className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 shrink-0" />
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
           {[
-            { n: groups.pending.length, label: 'Pendentes', tone: 'text-amber-600' },
-            { n: overdue, label: 'Atrasadas', tone: 'text-red-500' },
-            { n: groups.done.length, label: 'Dominadas', tone: 'text-green-600' },
+            { n: groups.pending.length, label: 'Pendentes', tone: 'text-amber-700 dark:text-amber-400' },
+            { n: overdue, label: 'Atrasadas', tone: 'text-red-700 dark:text-red-400' },
+            { n: groups.done.length, label: 'Dominadas', tone: 'text-green-700 dark:text-green-400' },
           ].map(c => (
             <div key={c.label} className="bg-gray-50 dark:bg-gray-800/40 rounded-xl py-2.5">
               <p className={`text-xl font-black ${c.tone}`}>{c.n}</p>
-              <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{c.label}</p>
+              <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">{c.label}</p>
             </div>
           ))}
         </div>
@@ -79,7 +79,7 @@ const ReviewStatusCard: React.FC = () => {
                 onClick={() => setFilter(f.id)}
                 aria-pressed={filter === f.id}
                 className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-                  filter === f.id ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-400 dark:text-gray-500'
+                  filter === f.id ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'
                 }`}
               >
                 {f.label} · {groups[f.id].length}
@@ -88,7 +88,7 @@ const ReviewStatusCard: React.FC = () => {
           </div>
 
           {shown.length === 0 ? (
-            <p className="text-center text-xs text-gray-400 dark:text-gray-500 py-4">Nenhuma revisão aqui.</p>
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 py-4">Nenhuma revisão aqui.</p>
           ) : (
             <ul className="space-y-2">
               {shown.map(i => (
@@ -96,11 +96,11 @@ const ReviewStatusCard: React.FC = () => {
                   <span className="w-2.5 h-2.5 mt-1.5 rounded-full shrink-0" style={{ backgroundColor: i.subjectColor }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-gray-800 dark:text-gray-200 leading-snug">{i.subtopic}</p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-snug">{i.subjectTitle}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-snug">{i.subjectTitle}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-[10px] font-black text-gray-600 dark:text-gray-300 uppercase tracking-wider">{currentIntervalLabel(i)}</p>
-                    <p className={`text-[10px] font-bold ${isOverdue(i, now) ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <p className={`text-[10px] font-bold ${isOverdue(i, now) ? 'text-red-700 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
                       {i.consolidated ? 'dominada' : `${dueText(daysUntilDue(i, now))}${isPendingNow(i, now) ? '' : ` · depois ${nextIntervalLabel(i)}`}`}
                     </p>
                   </div>

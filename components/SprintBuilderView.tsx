@@ -7,6 +7,7 @@ import { pendingItems } from '../utils/reviewAlgorithm';
 import { formatDuration } from '../utils/format';
 import { uid } from '../utils/id';
 import Icon from './Icon';
+import { legible } from '../utils/color';
 
 interface Props {
   subjects: Subject[];
@@ -20,14 +21,14 @@ const REVIEW_BREAK_MINUTES = 15;
 
 const TYPE_BADGE: Record<BlockType, string> = {
   study: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400',
-  review: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
-  questions: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+  review: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400',
+  questions: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400',
 };
 
 const ROW = 'flex items-stretch bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden';
 const STEP_BTN =
-  'w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 disabled:opacity-30 active:scale-90';
-const REMOVE_BTN = 'w-11 flex items-center justify-center text-gray-300 dark:text-gray-700 hover:text-red-400 transition-colors';
+  'w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 disabled:opacity-30 active:scale-90 dark:text-gray-400';
+const REMOVE_BTN = 'w-11 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-red-400 transition-colors';
 
 const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
   useBackButton(onClose);
@@ -74,20 +75,20 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
     }));
 
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-950 flex flex-col animate-slide-up">
+    <div role="dialog" aria-modal="true" aria-label="Montar sprint" className="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-950 flex flex-col animate-slide-up">
       {/* Cabeçalho */}
       <div className="flex items-center gap-3 px-4 pb-3 safe-top border-b border-gray-100 dark:border-gray-800 shrink-0">
         <button
           onClick={onClose}
           aria-label="Voltar"
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:scale-90 transition-transform shrink-0"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:scale-90 transition-transform shrink-0"
         >
           <Icon name="arrow-left" className="text-sm" />
         </button>
         <h2 className="flex-1 text-base font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">Montar sprint</h2>
         {totalMinutes > 0 && (
           <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-full">
-            <Icon name="clock" className="text-indigo-500 text-[10px]" />
+            <Icon name="clock" className="text-indigo-600 text-[10px] dark:text-indigo-400" />
             <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
               {formatDuration(totalMinutes)}
             </span>
@@ -100,10 +101,10 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
         {queue.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800/60 flex items-center justify-center">
-              <Icon name="list-ul" className="text-gray-300 dark:text-gray-600 text-xl" />
+              <Icon name="list-ul" className="text-gray-500 dark:text-gray-400 text-xl" />
             </div>
-            <p className="text-[11px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Sprint vazio</p>
-            <p className="text-xs text-gray-400 dark:text-gray-600 max-w-[200px] leading-relaxed">
+            <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Sprint vazio</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[200px] leading-relaxed">
               Toque nas matérias abaixo para adicionar blocos
             </p>
           </div>
@@ -118,8 +119,8 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
                   <div key={item.id} className={ROW}>
                     <div className={`w-1 shrink-0 ${review ? 'bg-amber-400' : 'bg-gray-200 dark:bg-gray-700'}`} />
                     <div className="flex-1 flex items-center gap-3 px-3 py-2.5">
-                      <Icon name={review ? 'bookmark' : 'mug-hot'} className={`text-sm shrink-0 ${review ? 'text-amber-500' : 'text-gray-400 dark:text-gray-600'}`} />
-                      <span className={`flex-1 text-sm font-black uppercase tracking-tight ${review ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                      <Icon name={review ? 'bookmark' : 'mug-hot'} className={`text-sm shrink-0 ${review ? 'text-amber-700 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}`} />
+                      <span className={`flex-1 text-sm font-black uppercase tracking-tight ${review ? 'text-amber-700 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {review ? 'Revisão' : 'Pausa'}
                       </span>
                       <div className="flex items-center gap-2 shrink-0">
@@ -149,7 +150,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
                     <span className="flex-1 text-sm font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight truncate">
                       {subject.title}
                     </span>
-                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase shrink-0">{subject.duration}min</span>
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase shrink-0">{subject.duration}min</span>
                     <button
                       onClick={() => cycleBlockType(item.id)}
                       title="Toque para mudar o tipo"
@@ -172,7 +173,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
       <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 shrink-0">
         {pending.length > 0 && (
           <div data-testid="review-banner" className="mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/10 p-3">
-            <Icon name="bookmark" className="text-amber-500 shrink-0" />
+            <Icon name="bookmark" className="text-amber-700 shrink-0 dark:text-amber-400" />
             <p className="flex-1 min-w-0 text-xs font-bold text-amber-800 dark:text-amber-300 leading-snug">
               {pending.length === 1 ? '1 revisão pendente' : `${pending.length} revisões pendentes`}
               {pending.some(p => p.nextReviewAt < new Date().setHours(0, 0, 0, 0)) && ' (algumas atrasadas)'}
@@ -181,7 +182,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
             <button
               onClick={addReviewBreak}
               disabled={reviewBreakAdded}
-              className="shrink-0 px-3 py-2 rounded-xl bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform disabled:opacity-40"
+              className="shrink-0 px-3 py-2 rounded-xl bg-amber-700 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform disabled:opacity-40"
             >
               {reviewBreakAdded ? 'Adicionada' : 'Adicionar'}
             </button>
@@ -206,7 +207,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
                 <span className="text-[11px] font-black text-gray-700 dark:text-gray-300 uppercase tracking-tight whitespace-nowrap">
                   {subject.title}
                 </span>
-                <span className="text-[10px] font-bold whitespace-nowrap" style={{ color: exhausted ? undefined : subject.color }}>
+                <span className="text-[10px] font-bold whitespace-nowrap" style={{ color: legible(exhausted ? undefined : subject.color) }}>
                   {available}/{remaining}
                 </span>
               </button>
@@ -216,7 +217,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
             onClick={addBreak}
             className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 active:scale-95 transition-transform shrink-0"
           >
-            <Icon name="mug-hot" className="text-gray-400 text-[10px]" />
+            <Icon name="mug-hot" className="text-gray-500 text-[10px] dark:text-gray-400" />
             <span className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-tight">Pausa</span>
           </button>
         </div>
@@ -227,7 +228,7 @@ const SprintBuilderView: React.FC<Props> = ({ subjects, onStart, onClose }) => {
             disabled={studyCount === 0}
             className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all ${
               studyCount === 0
-                ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed'
                 : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-[0.98]'
             }`}
           >

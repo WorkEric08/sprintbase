@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BANCAS, BlockLog, PostBlockData, SelfScore } from '../types';
 import Icon from './Icon';
+import { legible } from '../utils/color';
 
 interface Props {
   subjectId: string;
@@ -21,9 +22,9 @@ const SCORE_COLORS: Record<SelfScore, string> = {
   1: '#ef4444', 2: '#f97316', 3: '#eab308', 4: '#22c55e', 5: '#6366f1',
 };
 
-const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const LABEL = 'text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 const STEP_BTN =
-  'w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 disabled:opacity-30 active:scale-90 transition-transform';
+  'w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 disabled:opacity-30 active:scale-90 transition-transform dark:text-gray-400';
 
 const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor, blockLogs, defaultBanca = null, onSubmit, onSkip }) => {
   const [selfScore, setSelfScore] = useState<SelfScore>(3);
@@ -56,7 +57,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
     onSubmit({ questionsTotal, questionsCorrect, subtopic: subtopic.trim(), selfScore, banca, flaggedForReview: flagged });
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex flex-col justify-end md:justify-center md:items-center md:p-6 animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-label="Registro do bloco" className="fixed inset-0 z-[80] flex flex-col justify-end md:justify-center md:items-center md:p-6 animate-fade-in">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onSkip} />
 
       <div className="relative w-full md:max-w-lg bg-white dark:bg-gray-900 rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto modal-scroll animate-slide-up">
@@ -69,7 +70,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
             </div>
             <button
               onClick={onSkip}
-              className="text-[11px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest hover:text-indigo-500 transition-colors px-2 py-1 shrink-0"
+              className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:text-indigo-500 transition-colors px-2 py-1 shrink-0"
             >
               Pular
             </button>
@@ -88,7 +89,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
                   className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all active:scale-95 border-2 ${
                     selfScore === score
                       ? 'border-transparent text-white shadow-md'
-                      : 'border-gray-100 dark:border-gray-800 text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800/40'
+                      : 'border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40'
                   }`}
                   style={selfScore === score ? { backgroundColor: SCORE_COLORS[score] } : undefined}
                 >
@@ -96,7 +97,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
                 </button>
               ))}
             </div>
-            <p className="text-[10px] font-bold text-center" style={{ color: SCORE_COLORS[selfScore] }}>
+            <p className="text-[10px] font-bold text-center" style={{ color: legible(SCORE_COLORS[selfScore]) }}>
               {SCORE_LABELS[selfScore]}
             </p>
           </div>
@@ -106,7 +107,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
             <label className={LABEL}>Questões</label>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-gray-50 dark:bg-gray-800/40 rounded-2xl p-3 border border-gray-100 dark:border-gray-800">
-                <p className="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-2">Resolvidas</p>
+                <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Resolvidas</p>
                 <div className="flex items-center justify-between gap-2">
                   <button onClick={() => changeTotal(-1)} disabled={questionsTotal === 0} className={STEP_BTN} aria-label="Menos uma resolvida">
                     <Icon name="minus" className="text-[9px]" />
@@ -119,14 +120,14 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-800/40 rounded-2xl p-3 border border-gray-100 dark:border-gray-800">
-                <p className="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-2">Corretas</p>
+                <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Corretas</p>
                 <div className="flex items-center justify-between gap-2">
                   <button onClick={() => changeCorrect(-1)} disabled={questionsCorrect === 0} className={STEP_BTN} aria-label="Menos uma correta">
                     <Icon name="minus" className="text-[9px]" />
                   </button>
                   <span
                     className="text-2xl font-black tabular-nums"
-                    style={{ color: accuracy === null ? undefined : accuracy >= 70 ? '#22c55e' : '#ef4444' }}
+                    style={{ color: legible(accuracy === null ? undefined : accuracy >= 70 ? '#22c55e' : '#ef4444') }}
                   >
                     {questionsCorrect}
                   </span>
@@ -139,7 +140,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
 
             {accuracy !== null && (
               <div className="flex items-center justify-center gap-2 pt-1">
-                <span className="text-[11px] font-black" style={{ color: accuracy >= 70 ? '#22c55e' : '#ef4444' }}>
+                <span className="text-[11px] font-black" style={{ color: legible(accuracy >= 70 ? '#22c55e' : '#ef4444') }}>
                   {accuracy}% de acerto
                 </span>
                 {wrong > 0 && (
@@ -161,7 +162,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
               value={subtopic}
               onChange={e => setSubtopic(e.target.value)}
               placeholder="Ex.: Funções, Direito Constitucional…"
-              className="w-full bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700"
+              className="w-full bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700"
             />
             {filtered.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -213,7 +214,7 @@ const PostBlockModal: React.FC<Props> = ({ subjectId, subjectTitle, subjectColor
                 : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40'
             }`}
           >
-            <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${flagged ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+            <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${flagged ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
               <Icon name="bookmark" className="text-sm" />
             </span>
             <span className="flex-1 min-w-0">

@@ -11,6 +11,7 @@ import { isDateKey } from '../utils/exam';
 import { SETTING_KEYS } from '../utils/settings';
 import ConfirmDialog from './ConfirmDialog';
 import Icon from './Icon';
+import { legible } from '../utils/color';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -39,7 +40,7 @@ const CicloView: React.FC = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{getGreeting()}</p>
+          <p className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">{getGreeting()}</p>
           <h2 className="text-xl font-black text-gray-800 dark:text-gray-100 tracking-tight truncate">
             {userName || 'Estudante'}
           </h2>
@@ -126,7 +127,7 @@ const CicloView: React.FC = () => {
           onConfirm={() => { resetSubjectBlocks(confirmReset.id); setConfirmReset(null); }}
           onCancel={() => setConfirmReset(null)}
         >
-          Todos os blocos concluídos de <span className="font-bold" style={{ color: confirmReset.color }}>{confirmReset.title}</span> serão
+          Todos os blocos concluídos de <span className="font-bold" style={{ color: legible(confirmReset.color) }}>{confirmReset.title}</span> serão
           apagados. Esta ação não pode ser desfeita.
         </ConfirmDialog>
       )}
@@ -139,7 +140,7 @@ const CicloView: React.FC = () => {
           onConfirm={() => { deleteSubject(confirmDelete.id); setConfirmDelete(null); }}
           onCancel={() => setConfirmDelete(null)}
         >
-          <span className="font-bold" style={{ color: confirmDelete.color }}>{confirmDelete.title}</span> e todos os seus blocos
+          <span className="font-bold" style={{ color: legible(confirmDelete.color) }}>{confirmDelete.title}</span> e todos os seus blocos
           serão excluídos permanentemente.
         </ConfirmDialog>
       )}

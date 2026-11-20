@@ -29,7 +29,7 @@ const WelcomeBackCard: React.FC<Props> = ({ userName, daysAbsent, longestStreak,
         className="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 p-6 space-y-4 mb-2 animate-slide-up"
       >
         <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto">
-          <Icon name="face-smile" className="text-indigo-500 text-2xl" />
+          <Icon name="face-smile" className="text-indigo-600 text-2xl dark:text-indigo-400" />
         </div>
 
         <div className="text-center space-y-2">
@@ -42,7 +42,7 @@ const WelcomeBackCard: React.FC<Props> = ({ userName, daysAbsent, longestStreak,
               : 'O importante é estar aqui. Vamos retomar onde paramos.'}
           </p>
           {longestStreak > 0 && (
-            <p className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">
+            <p className="text-[11px] font-bold text-indigo-600 uppercase tracking-widest dark:text-indigo-400">
               Seu recorde: {longestStreak} dias seguidos — ainda é seu.
             </p>
           )}
@@ -56,7 +56,7 @@ const WelcomeBackCard: React.FC<Props> = ({ userName, daysAbsent, longestStreak,
         </button>
         <button
           onClick={onDismiss}
-          className="w-full py-2 text-gray-400 dark:text-gray-600 text-[10px] font-black uppercase tracking-widest"
+          className="w-full py-2 text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest"
         >
           Só estou olhando por agora
         </button>

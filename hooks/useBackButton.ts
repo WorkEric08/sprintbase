@@ -64,6 +64,13 @@ function init() {
     return;
   }
 
+  // Teclado (web/PWA, tablet com teclado): Esc faz o mesmo que voltar. Não interfere na composição de texto do IME.
+  window.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || e.isComposing || e.defaultPrevented) return;
+    const top = stack[stack.length - 1];
+    if (top) top.handler();
+  });
+
   window.addEventListener('popstate', () => {
     if (ignorePops > 0) {
       ignorePops--;

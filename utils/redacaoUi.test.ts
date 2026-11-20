@@ -62,7 +62,7 @@ describe('o texto de quem escreve', () => {
   it('a escrita é uma tela cheia opaca com o fundo do app, e o botão voltar pergunta antes de sair', () => {
     for (const file of ['components/RedacaoEditorView.tsx', 'components/RedacaoPaperView.tsx']) {
       const src = read(file);
-      expect(src, file).toMatch(/data-testid="redacao-writer" className="fixed inset-0 z-\[60\] bg-gray-50 dark:bg-gray-950/);
+      expect(src, file).toMatch(/data-testid="redacao-writer" role="dialog" aria-modal="true" aria-label="[^"]+" className="fixed inset-0 z-\[60\] bg-gray-50 dark:bg-gray-950/);
       expect(src, file).toMatch(/useBackButton\(\(\) => w\.setShowExit\(true\)\)/);
     }
   });

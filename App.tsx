@@ -121,7 +121,7 @@ const Shell: React.FC = () => {
               className={`w-full flex items-center justify-center lg:justify-start gap-3 py-3 lg:px-4 rounded-xl transition-all ${
                 activeTab === tab.id
                   ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                  : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60 dark:text-gray-400'
               }`}
             >
               <TabIcon name={tab.icon} className="text-base w-5 text-center" badge={tab.id === 'simulado' && simuladoPending} />
@@ -135,7 +135,7 @@ const Shell: React.FC = () => {
             <div className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
               <Icon name="user" className="text-[10px] text-indigo-600 dark:text-indigo-400" />
             </div>
-            <span className="hidden lg:block text-xs font-bold text-gray-500 truncate max-w-[140px]">{userName || 'Estudante'}</span>
+            <span className="hidden lg:block text-xs font-bold text-gray-500 truncate max-w-[140px] dark:text-gray-400">{userName || 'Estudante'}</span>
           </div>
         </div>
       </aside>
@@ -168,7 +168,7 @@ const Shell: React.FC = () => {
             key={tab.id}
             onClick={() => goTo(tab.id)}
             className={`flex-1 flex flex-col items-center gap-1 transition-all active:scale-90 ${
-              activeTab === tab.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-600'
+              activeTab === tab.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
             }`}
           >
             <TabIcon name={tab.icon} className="text-xl" badge={tab.id === 'simulado' && simuladoPending} />

@@ -28,7 +28,7 @@ const RedacaoPaperView: React.FC<Props> = ({ theme, resume, isDevMode, onSaveDra
   useBackButton(() => w.setShowExit(true));
 
   return createPortal(
-    <div data-testid="redacao-writer" className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col animate-fade-in">
+    <div data-testid="redacao-writer" role="dialog" aria-modal="true" aria-label="Redação no papel" className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col animate-fade-in">
       <RedacaoTimerCard
         remainingMs={w.remainingMs}
         running={w.running}
@@ -42,19 +42,19 @@ const RedacaoPaperView: React.FC<Props> = ({ theme, resume, isDevMode, onSaveDra
       <div className="flex-1 overflow-y-auto modal-scroll">
         <article className="max-w-3xl mx-auto px-4 py-4 space-y-3">
           <RedacaoThemeBadges theme={theme} extra={
-            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">Papel</span>
+            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">Papel</span>
           } />
           <h1 className="text-xl md:text-2xl font-black text-gray-800 dark:text-gray-100 leading-tight">{theme.title}</h1>
           <div className="border-t border-amber-100 dark:border-gray-800" />
-          <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">
+          <p className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">
             <Icon name="file-lines" className="mr-1" /> Texto de apoio
           </p>
           {theme.context ? (
             <p className="text-[15px] md:text-base text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">{theme.context}</p>
           ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-500 italic">Nenhum texto de apoio disponível para este tema.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 italic">Nenhum texto de apoio disponível para este tema.</p>
           )}
-          <p className="text-center text-[11px] text-amber-600 dark:text-amber-400 font-bold pt-4">
+          <p className="text-center text-[11px] text-amber-700 dark:text-amber-400 font-bold pt-4">
             Toque em iniciar quando começar a escrever. Boa redação!
           </p>
         </article>

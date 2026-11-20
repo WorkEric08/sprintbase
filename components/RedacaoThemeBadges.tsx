@@ -18,12 +18,12 @@ const RedacaoThemeBadges: React.FC<{ theme: RedacaoTheme; extra?: React.ReactNod
         {AXIS_LABELS[theme.axis]}
       </span>
       {theme.year && (
-        <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">ENEM {theme.year}</span>
+        <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">ENEM {theme.year}</span>
       )}
       {!theme.verified && (
         <span
           title="O título e o ano deste tema ainda não foram conferidos na fonte oficial (INEP)."
-          className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400"
+          className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
         >
           A conferir
         </span>

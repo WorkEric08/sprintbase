@@ -8,6 +8,7 @@ import ConfirmDialog from './ConfirmDialog';
 import EvolutionChart from './EvolutionChart';
 import Icon from './Icon';
 import UndoBar from './UndoBar';
+import { legible } from '../utils/color';
 
 interface Props {
   /** Do mais recente para o mais antigo. */
@@ -19,7 +20,7 @@ interface Props {
 }
 
 const CARD = 'bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800';
-const CAPTION = 'text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const CAPTION = 'text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 
 const scoreColor = (pct: number) => (pct >= PASS_PCT ? '#16a34a' : '#ef4444');
 
@@ -41,12 +42,12 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col animate-slide-up">
+    <div role="dialog" aria-modal="true" aria-label="Histórico de simulados" className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col animate-slide-up">
       <div className="flex items-center gap-3 px-4 pb-3 safe-top border-b border-gray-100 dark:border-gray-800 shrink-0">
         <button
           onClick={onClose}
           aria-label="Voltar"
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:scale-90 transition-transform"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:scale-90 transition-transform"
         >
           <Icon name="arrow-left" className="text-sm" />
         </button>
@@ -61,10 +62,10 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
           {records.length === 0 ? (
             <div className="flex flex-col items-center py-20 gap-3 text-center">
               <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Icon name="stopwatch" className="text-gray-300 dark:text-gray-600 text-xl" />
+                <Icon name="stopwatch" className="text-gray-500 dark:text-gray-400 text-xl" />
               </div>
-              <p className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Nenhum simulado realizado</p>
-              <p className="text-xs text-gray-400 dark:text-gray-600 max-w-[240px] leading-relaxed">
+              <p className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Nenhum simulado realizado</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[240px] leading-relaxed">
                 Os simulados que você fizer na aba Simulado aparecem aqui, com a evolução do aproveitamento.
               </p>
             </div>
@@ -76,7 +77,7 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
                     <p className={CAPTION}>Média (últimos 3)</p>
                     <p className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-1">{avg.recent}%</p>
                     {avg.previous !== null && (
-                      <p className={`text-[11px] font-bold mt-1 ${avg.recent > avg.previous ? 'text-green-600' : avg.recent < avg.previous ? 'text-red-500' : 'text-gray-400'}`}>
+                      <p className={`text-[11px] font-bold mt-1 ${avg.recent > avg.previous ? 'text-green-700 dark:text-green-400' : avg.recent < avg.previous ? 'text-red-700 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {avg.recent > avg.previous ? '↑' : avg.recent < avg.previous ? '↓' : '→'} vs {avg.previous}% anteriores
                       </p>
                     )}
@@ -84,7 +85,7 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
                   <div className={`${CARD} p-4`}>
                     <p className={CAPTION}>Estimativa na prova</p>
                     <p className="text-3xl font-black text-gray-800 dark:text-white mt-1">~{avg.recent}%</p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Estimativa, não garantia</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Estimativa, não garantia</p>
                   </div>
                 </div>
               )}
@@ -97,7 +98,7 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
               )}
 
               <div className="space-y-2">
-                <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Linha do tempo</p>
+                <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Linha do tempo</p>
                 {records.map(r => {
                   const pct = overallPct(r);
                   const open = expanded === r.id;
@@ -114,14 +115,14 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
                             <p className="text-xs font-black text-gray-800 dark:text-gray-100">
                               {date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                             </p>
-                            <p className="text-[9px] text-gray-400 dark:text-gray-500">{date.getFullYear()}</p>
+                            <p className="text-[9px] text-gray-500 dark:text-gray-400">{date.getFullYear()}</p>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">{r.templateName}</p>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className="text-[11px] text-gray-400 dark:text-gray-500">{formatDuration(r.actualDurationMinutes)}</span>
+                              <span className="text-[11px] text-gray-500 dark:text-gray-400">{formatDuration(r.actualDurationMinutes)}</span>
                               {!r.completed && (
-                                <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
+                                <span className="text-[9px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
                                   Interrompido
                                 </span>
                               )}
@@ -130,20 +131,20 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
                           <div className="text-right shrink-0">
                             {pct !== null ? (
                               <>
-                                <p className="text-xl font-black" style={{ color: scoreColor(pct) }}>{pct}%</p>
-                                <p className="text-[9px] text-gray-400 dark:text-gray-500">aproveit.</p>
+                                <p className="text-xl font-black" style={{ color: legible(scoreColor(pct)) }}>{pct}%</p>
+                                <p className="text-[9px] text-gray-500 dark:text-gray-400">aproveit.</p>
                               </>
                             ) : (
-                              <p className="text-xs font-bold text-gray-400 dark:text-gray-500">sem nota</p>
+                              <p className="text-xs font-bold text-gray-500 dark:text-gray-400">sem nota</p>
                             )}
                           </div>
-                          <Icon name={open ? 'chevron-up' : 'chevron-down'} className="text-[10px] text-gray-300 dark:text-gray-600" />
+                          <Icon name={open ? 'chevron-up' : 'chevron-down'} className="text-[10px] text-gray-500 dark:text-gray-400" />
                         </button>
 
                         <button
                           onClick={() => setConfirming(r)}
                           aria-label={`Excluir simulado de ${date.toLocaleDateString('pt-BR')}`}
-                          className="w-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 text-gray-300 dark:text-gray-600 hover:text-red-400 active:text-red-500 transition-colors shrink-0"
+                          className="w-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:text-red-400 active:text-red-500 transition-colors shrink-0"
                         >
                           <Icon name="trash" className="text-[12px]" />
                         </button>
@@ -162,7 +163,7 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
                                         <div className="w-2 h-2 mt-1.5 rounded-full shrink-0" style={{ backgroundColor: a.color }} />
                                         <span className="text-xs text-gray-600 dark:text-gray-400">{a.areaName}</span>
                                       </div>
-                                      <span className="text-xs font-black shrink-0" style={{ color: scoreColor(p) }}>
+                                      <span className="text-xs font-black shrink-0" style={{ color: legible(scoreColor(p)) }}>
                                         {a.questionsCorrect}/{a.questionsTotal} · {p}%
                                       </span>
                                     </div>
@@ -177,14 +178,14 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
 
                           {r.redacaoScore !== null && (
                             <p className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                              <Icon name="pen" className="text-[10px] text-violet-500" />
-                              Redação: <strong className="text-violet-500">{r.redacaoScore}/1000</strong>
+                              <Icon name="pen" className="text-[10px] text-violet-600 dark:text-violet-400" />
+                              Redação: <strong className="text-violet-600 dark:text-violet-400">{r.redacaoScore}/1000</strong>
                             </p>
                           )}
                           {r.timeControlScore !== null && (
                             <p className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                              <Icon name="clock" className="text-[10px] text-indigo-500" />
-                              Controle do tempo: <strong className="text-indigo-500">{r.timeControlScore}/5</strong>
+                              <Icon name="clock" className="text-[10px] text-indigo-600 dark:text-indigo-400" />
+                              Controle do tempo: <strong className="text-indigo-600 dark:text-indigo-400">{r.timeControlScore}/5</strong>
                             </p>
                           )}
                           {r.perception && (
@@ -193,7 +194,7 @@ const SimuladoHistoryView: React.FC<Props> = ({ records, onSave, onDelete, onClo
                             </p>
                           )}
                           {!r.areaResults.some(a => a.questionsTotal > 0) && r.redacaoScore === null && r.timeControlScore === null && !r.perception && (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">Registrado sem gabarito: só o tempo foi guardado.</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Registrado sem gabarito: só o tempo foi guardado.</p>
                           )}
                         </div>
                       )}

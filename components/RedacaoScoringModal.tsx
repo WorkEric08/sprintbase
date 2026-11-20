@@ -15,7 +15,7 @@ interface Props {
   onSaveWithoutScore: (notes: string) => void;
 }
 
-const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const LABEL = 'text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 
 /** Autoavaliação das 5 competências do ENEM (0–200 cada) ao concluir a redação. */
 const RedacaoScoringModal: React.FC<Props> = ({ onClose, onSave, onSaveWithoutScore }) => {
@@ -38,11 +38,11 @@ const RedacaoScoringModal: React.FC<Props> = ({ onClose, onSave, onSaveWithoutSc
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-base font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">Autoavaliação</h3>
-              <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mt-0.5">Redação ENEM · 5 competências</p>
+              <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 mt-0.5">Redação ENEM · 5 competências</p>
             </div>
             <button
               onClick={onClose}
-              className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest hover:text-violet-500 transition-colors px-2 py-1 shrink-0"
+              className="text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:text-violet-500 transition-colors px-2 py-1 shrink-0"
             >
               Voltar ao texto
             </button>
@@ -51,9 +51,9 @@ const RedacaoScoringModal: React.FC<Props> = ({ onClose, onSave, onSaveWithoutSc
 
         <div className="px-5 py-4 space-y-6 pb-8">
           <div className="bg-violet-50 dark:bg-violet-900/20 rounded-2xl p-4 text-center border border-violet-100 dark:border-violet-900/30">
-            <p className="text-[9px] font-black text-violet-500 uppercase tracking-widest mb-1">Nota estimada</p>
+            <p className="text-[9px] font-black text-violet-600 uppercase tracking-widest mb-1 dark:text-violet-400">Nota estimada</p>
             <p data-testid="redacao-total" className="text-4xl font-black text-violet-600 dark:text-violet-400">{total}</p>
-            <p className="text-xs text-violet-500 dark:text-violet-300 mt-0.5">de {MAX_SCORE} pontos</p>
+            <p className="text-xs text-violet-600 dark:text-violet-300 mt-0.5">de {MAX_SCORE} pontos</p>
             <div className="mt-3 h-2 bg-violet-100 dark:bg-violet-900/40 rounded-full overflow-hidden max-w-[280px] mx-auto">
               <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${(total / MAX_SCORE) * 100}%` }} />
             </div>
@@ -66,7 +66,7 @@ const RedacaoScoringModal: React.FC<Props> = ({ onClose, onSave, onSaveWithoutSc
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 space-y-0.5">
                     <span className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-tight">{c.label}: {c.title}</span>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed">{c.desc}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">{c.desc}</p>
                   </div>
                   <span className="text-base font-black text-violet-600 dark:text-violet-400 shrink-0 tabular-nums">{scores[c.key]}</span>
                 </div>
@@ -79,8 +79,8 @@ const RedacaoScoringModal: React.FC<Props> = ({ onClose, onSave, onSaveWithoutSc
                       aria-label={`${c.label}: ${step}`}
                       className={`flex-1 py-2.5 rounded-xl text-[11px] font-black transition-all active:scale-95 ${
                         scores[c.key] === step
-                          ? 'bg-violet-500 text-white shadow-md'
-                          : 'bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700'
+                          ? 'bg-violet-600 text-white shadow-md'
+                          : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-gray-700'
                       }`}
                     >
                       {step}
@@ -101,7 +101,7 @@ const RedacaoScoringModal: React.FC<Props> = ({ onClose, onSave, onSaveWithoutSc
               onChange={e => setNotes(e.target.value)}
               placeholder="O que melhorar na próxima vez…"
               rows={3}
-              className="w-full bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 resize-none focus:outline-none focus:border-violet-300 dark:focus:border-violet-700 transition-colors leading-relaxed"
+              className="w-full bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none focus:outline-none focus:border-violet-300 dark:focus:border-violet-700 transition-colors leading-relaxed"
             />
           </div>
 
@@ -115,7 +115,7 @@ const RedacaoScoringModal: React.FC<Props> = ({ onClose, onSave, onSaveWithoutSc
             </button>
             <button
               onClick={() => onSaveWithoutScore(notes)}
-              className="w-full py-3 text-gray-400 dark:text-gray-500 font-black text-[11px] uppercase tracking-widest hover:text-violet-500 transition-colors"
+              className="w-full py-3 text-gray-500 dark:text-gray-400 font-black text-[11px] uppercase tracking-widest hover:text-violet-500 transition-colors"
             >
               Salvar sem nota
             </button>

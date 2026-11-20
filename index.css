@@ -104,6 +104,36 @@
 
 :root {
   --app-height: 100vh;
+  /* Mistura que deixa a cor de um TEXTO legível (utils/color.ts): escurece no tema claro e clareia um pouco no escuro. */
+  --legible-mix: black 38%;
+}
+.dark {
+  --legible-mix: white 22%;
+}
+
+/* Cronômetros (bloco e pausa): o anel e o relógio acompanham a ALTURA da tela, para os botões nunca saírem dela. */
+.timer-ring-box { width: min(18rem, 44vh); height: min(18rem, 44vh); }
+.timer-clock { font-size: min(3.75rem, 9.5vh); line-height: 1; }
+.timer-body { display: contents; }
+/* Celular deitado: anel de um lado, botões do outro. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .timer-body {
+    display: flex; flex: 1 1 0%; min-height: 0; width: 100%;
+    flex-direction: row; align-items: center; justify-content: space-around;
+  }
+  .timer-ring-box { width: min(18rem, 62vh); height: min(18rem, 62vh); }
+  .timer-clock { font-size: min(3.75rem, 14vh); }
+  .timer-actions { padding-bottom: 0 !important; }
+}
+
+/* Movimento reduzido: sem animações de entrada nem transições de cor/posição (acessibilidade). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @supports (height: 100dvh) {

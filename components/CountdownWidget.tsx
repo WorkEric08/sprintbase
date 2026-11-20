@@ -11,10 +11,10 @@ interface Props {
 }
 
 const STYLES: Record<Urgency, { bar: string; text: string; badge: string }> = {
-  far: { bar: 'bg-gray-400 dark:bg-gray-600', text: 'text-gray-500 dark:text-gray-400', badge: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400' },
+  far: { bar: 'bg-gray-400 dark:bg-gray-600', text: 'text-gray-500 dark:text-gray-400', badge: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' },
   mid: { bar: 'bg-indigo-500', text: 'text-indigo-600 dark:text-indigo-400', badge: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' },
-  near: { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' },
-  urgent: { bar: 'bg-red-500', text: 'text-red-600 dark:text-red-400', badge: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' },
+  near: { bar: 'bg-amber-500', text: 'text-amber-700 dark:text-amber-400', badge: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' },
+  urgent: { bar: 'bg-red-500', text: 'text-red-700 dark:text-red-400', badge: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400' },
 };
 
 /** Quanto falta para a prova. Acompanha a virada do dia sozinho (useToday). */
@@ -27,7 +27,7 @@ const CountdownWidget: React.FC<Props> = ({ examDate, examName, onEditDate }) =>
     return (
       <div data-testid="countdown" className="bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <Icon name="flag-checkered" className="text-gray-400 text-sm shrink-0" />
+          <Icon name="flag-checkered" className="text-gray-500 text-sm shrink-0 dark:text-gray-400" />
           <span className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Prova encerrada</span>
         </div>
         <button onClick={onEditDate} className="shrink-0 py-2 text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Atualizar data</button>
@@ -51,28 +51,28 @@ const CountdownWidget: React.FC<Props> = ({ examDate, examName, onEditDate }) =>
             </span>
             <span className="text-xs font-black text-gray-600 dark:text-gray-400 uppercase tracking-tight">{examName ?? 'para a prova'}</span>
           </div>
-          <Icon name={expanded ? 'chevron-up' : 'chevron-down'} className="text-[10px] text-gray-300 dark:text-gray-600 mt-1.5 shrink-0" />
+          <Icon name={expanded ? 'chevron-up' : 'chevron-down'} className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 shrink-0" />
         </div>
 
         <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
           <div className={`h-full rounded-full transition-all duration-700 ${style.bar}`} style={{ width: `${progress}%` }} />
         </div>
         <div className="flex justify-between mt-1.5 gap-2">
-          <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">{formatExamDate(examDate)}</span>
+          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">{formatExamDate(examDate)}</span>
           <span className={`text-[10px] font-black uppercase tracking-widest ${style.text}`}>{progress}% do caminho</span>
         </div>
       </button>
 
       {expanded && (
         <div className="border-t border-gray-100 dark:border-gray-800 px-4 pb-4 pt-3 space-y-3 animate-fade-in">
-          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Marcos sugeridos para esta fase</p>
+          <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Marcos sugeridos para esta fase</p>
           {MILESTONES[urgency].map((m, i) => (
             <div key={m} className="flex items-start gap-3">
               <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-black ${style.badge}`}>{i + 1}</span>
               <span className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{m}</span>
             </div>
           ))}
-          <button onClick={onEditDate} className="py-2 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest hover:text-indigo-500 transition-colors">
+          <button onClick={onEditDate} className="py-2 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:text-indigo-500 transition-colors">
             <Icon name="calendar-days" className="mr-1" />
             Alterar data da prova
           </button>

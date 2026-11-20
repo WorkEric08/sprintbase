@@ -9,7 +9,7 @@ import { isNative } from '../utils/platform';
 import ConfirmDialog from './ConfirmDialog';
 import Icon from './Icon';
 
-const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const LABEL = 'text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 const BTN = 'flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 disabled:opacity-50';
 
 type Feedback = { kind: 'ok' | 'error'; text: string } | null;
@@ -74,7 +74,7 @@ const BackupCard: React.FC = () => {
   return (
     <div className="space-y-2">
       <span className={LABEL}>Seus dados</span>
-      <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed px-1">
+      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed px-1">
         Tudo fica só neste aparelho. Desinstalar o app ou limpar os dados apaga o histórico, então guarde um backup.
       </p>
 
@@ -100,7 +100,7 @@ const BackupCard: React.FC = () => {
       />
 
       {feedback && (
-        <p className={`text-xs font-medium px-1 ${feedback.kind === 'ok' ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`} role="status">
+        <p className={`text-xs font-medium px-1 ${feedback.kind === 'ok' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`} role="status">
           <Icon name={feedback.kind === 'ok' ? 'circle-check' : 'circle-exclamation'} className="mr-1.5" />
           {feedback.text}
         </p>
@@ -118,7 +118,7 @@ const BackupCard: React.FC = () => {
           O backup de <span className="font-bold">{formatDate(pending.summary.exportedAt)}</span> tem{' '}
           <span className="font-bold">{pending.summary.subjects} matérias</span> e{' '}
           <span className="font-bold">{pending.summary.blockLogs} registros</span>. Os dados atuais deste aparelho serão{' '}
-          <span className="font-bold text-red-500">substituídos</span>.
+          <span className="font-bold text-red-700 dark:text-red-400">substituídos</span>.
         </ConfirmDialog>
       )}
     </div>

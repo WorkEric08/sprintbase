@@ -641,6 +641,16 @@ async function main() {
     await waitGone('Iniciar · 2 blocos');
     assert(await hasText('português 2'), 'não voltou ao Ciclo');
   });
+  if (target.name === 'web') {
+    await check('acessibilidade: a tela cheia tem papel de diálogo e o Esc fecha a camada do topo', async () => {
+      await click('Montar sprint');
+      await waitText('Sprint vazio');
+      assert(await page.evaluate(() => !!document.querySelector('[role=dialog][aria-modal=true][aria-label="Montar sprint"]')), 'sem role=dialog no Montar sprint');
+      await page.keyboard.press('Escape');
+      await waitGone('Sprint vazio');
+      assert(await hasText('português 2'), 'o Esc não voltou ao Ciclo');
+    });
+  }
 
   // ── Executar sprint ──
   group('Executar sprint');

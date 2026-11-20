@@ -14,9 +14,9 @@ interface Props {
   onOpenHistory: () => void;
 }
 
-const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const LABEL = 'text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 const ROUND_BTN =
-  'w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 disabled:opacity-30 active:scale-90 transition-transform shrink-0';
+  'w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 disabled:opacity-30 active:scale-90 transition-transform shrink-0 dark:text-gray-400';
 
 /** Escolha do modelo de simulado. É o começo da aba; "Começar" inicia o cronômetro. */
 const SimuladoSetupModal: React.FC<Props> = ({ isDevMode, recordCount, onStart, onOpenHistory }) => {
@@ -45,7 +45,7 @@ const SimuladoSetupModal: React.FC<Props> = ({ isDevMode, recordCount, onStart, 
           className="shrink-0 flex items-center gap-2 px-4 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform"
         >
           <Icon name="clock-rotate-left" />
-          Histórico{recordCount > 0 && <span className="text-indigo-500">{recordCount}</span>}
+          Histórico{recordCount > 0 && <span className="text-indigo-600 dark:text-indigo-400">{recordCount}</span>}
         </button>
       </div>
 
@@ -74,12 +74,12 @@ const SimuladoSetupModal: React.FC<Props> = ({ isDevMode, recordCount, onStart, 
                 <div className="flex-1 min-w-0">
                   <p className="font-black text-gray-800 dark:text-gray-100 text-sm uppercase tracking-tight">{t.name}</p>
                   <div className="flex items-center gap-x-2 gap-y-0.5 mt-0.5 flex-wrap text-[10px] font-bold">
-                    <span className="text-gray-500">{t.id === 'custom' ? 'Você escolhe a duração' : formatDuration(t.durationMinutes)}</span>
-                    {t.strictMode && <span className="font-black text-red-500 uppercase tracking-widest">· Estrito</span>}
-                    {t.hasRedacao && <span className="font-black text-violet-500 uppercase tracking-widest">· Redação</span>}
+                    <span className="text-gray-500 dark:text-gray-400">{t.id === 'custom' ? 'Você escolhe a duração' : formatDuration(t.durationMinutes)}</span>
+                    {t.strictMode && <span className="font-black text-red-700 uppercase tracking-widest dark:text-red-400">· Estrito</span>}
+                    {t.hasRedacao && <span className="font-black text-violet-600 uppercase tracking-widest dark:text-violet-400">· Redação</span>}
                   </div>
                   {t.areas.length > 0 && (
-                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-0.5 leading-snug">
+                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
                       {t.areas.map(a => a.name).join(' · ')}
                     </p>
                   )}
@@ -102,7 +102,7 @@ const SimuladoSetupModal: React.FC<Props> = ({ isDevMode, recordCount, onStart, 
               <Icon name="minus" className="text-xs" />
             </button>
             <div className="flex-1 text-center">
-              <p className="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest leading-none">Duração</p>
+              <p className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest leading-none">Duração</p>
               <p className="text-xl font-black text-gray-800 dark:text-white leading-tight">{formatDuration(customDuration)}</p>
             </div>
             <button
@@ -128,13 +128,13 @@ const SimuladoSetupModal: React.FC<Props> = ({ isDevMode, recordCount, onStart, 
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
               customStrict ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800'
             }`}>
-              <Icon name="lock" className={`text-xs ${customStrict ? 'text-red-500' : 'text-gray-400'}`} />
+              <Icon name="lock" className={`text-xs ${customStrict ? 'text-red-700 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`} />
             </div>
             <div className="text-left flex-1 min-w-0">
               <p className={`text-xs font-black uppercase tracking-tight ${customStrict ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
                 Modo estrito
               </p>
-              <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 leading-tight">Sem pausas durante o simulado</p>
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 leading-tight">Sem pausas durante o simulado</p>
             </div>
             <div className={`w-10 h-6 rounded-full p-0.5 transition-colors shrink-0 ${customStrict ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
               <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${customStrict ? 'translate-x-4' : 'translate-x-0'}`} />
@@ -145,7 +145,7 @@ const SimuladoSetupModal: React.FC<Props> = ({ isDevMode, recordCount, onStart, 
 
       {isDevMode && (
         <div className="space-y-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-3">
-          <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">Modo desenvolvedor · velocidade</p>
+          <p className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">Modo desenvolvedor · velocidade</p>
           <div className="flex gap-2">
             {SPEEDS.map(s => (
               <button
@@ -153,7 +153,7 @@ const SimuladoSetupModal: React.FC<Props> = ({ isDevMode, recordCount, onStart, 
                 onClick={() => setSpeed(s)}
                 aria-pressed={speed === s}
                 className={`flex-1 py-2 rounded-xl font-black text-xs transition-all active:scale-95 ${
-                  speed === s ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-900 text-gray-500 border border-gray-200 dark:border-gray-700'
+                  speed === s ? 'bg-amber-700 text-white' : 'bg-white dark:bg-gray-900 text-gray-500 border border-gray-200 dark:border-gray-700 dark:text-gray-400'
                 }`}
               >
                 {s === 1 ? 'Normal' : `×${s}`}
@@ -168,7 +168,7 @@ const SimuladoSetupModal: React.FC<Props> = ({ isDevMode, recordCount, onStart, 
         </div>
       )}
 
-      <p className="flex items-start gap-2 text-[11px] font-bold text-gray-400 dark:text-gray-500 leading-snug">
+      <p className="flex items-start gap-2 text-[11px] font-bold text-gray-500 dark:text-gray-400 leading-snug">
         <Icon name={isNative ? 'bell' : 'circle-info'} className="mt-0.5" />
         {isNative
           ? 'O app avisa quando faltar 1 hora, 30 minutos e 10 minutos e quando o tempo acabar, mesmo com a tela bloqueada, e mantém a tela ligada. O Android vai pedir permissão para notificações.'

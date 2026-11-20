@@ -49,7 +49,7 @@ const RedacaoEditorView: React.FC<Props> = ({ theme, resume, isDevMode, onSaveDr
   const status = wordStatus(w.words);
 
   return createPortal(
-    <div data-testid="redacao-writer" className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col animate-fade-in">
+    <div data-testid="redacao-writer" role="dialog" aria-modal="true" aria-label="Escrever redação" className="fixed inset-0 z-[60] bg-gray-50 dark:bg-gray-950 flex flex-col animate-fade-in">
       <RedacaoTimerCard
         remainingMs={w.remainingMs}
         running={w.running}
@@ -62,7 +62,7 @@ const RedacaoEditorView: React.FC<Props> = ({ theme, resume, isDevMode, onSaveDr
           <button
             onClick={() => setShowSupport(true)}
             aria-label="Apoio de escrita"
-            className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center active:scale-90 transition-transform shrink-0"
+            className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center active:scale-90 transition-transform shrink-0"
           >
             <Icon name="list-check" className="text-xs" />
           </button>
@@ -88,7 +88,7 @@ const RedacaoEditorView: React.FC<Props> = ({ theme, resume, isDevMode, onSaveDr
             autoCapitalize="sentences"
             autoCorrect="on"
             autoFocus
-            className="w-full min-h-[45vh] text-base leading-7 text-gray-800 dark:text-gray-100 bg-transparent resize-none focus:outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700 overflow-hidden"
+            className="w-full min-h-[45vh] text-base leading-7 text-gray-800 dark:text-gray-100 bg-transparent resize-none focus:outline-none placeholder:text-gray-500 dark:placeholder:text-gray-400 overflow-hidden"
           />
         </article>
       </div>
@@ -97,9 +97,9 @@ const RedacaoEditorView: React.FC<Props> = ({ theme, resume, isDevMode, onSaveDr
         <div data-testid="redacao-footer" className="shrink-0 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 px-4 pt-3 safe-bottom">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
             <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 leading-snug" aria-live="polite">
-              <Icon name={status === 'ideal' ? 'circle-check' : 'triangle-exclamation'} className={`mr-1 ${status === 'ideal' ? 'text-green-600' : 'text-amber-500'}`} />
+              <Icon name={status === 'ideal' ? 'circle-check' : 'triangle-exclamation'} className={`mr-1 ${status === 'ideal' ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`} />
               <span data-testid="redacao-words">{w.words} palavras</span> · {STATUS_TEXT[status]}
-              <span className="block text-[10px] font-normal text-gray-400 dark:text-gray-500">
+              <span className="block text-[10px] font-normal text-gray-500 dark:text-gray-400">
                 ideal: {WORDS_MIN} a {WORDS_MAX} · {w.lastSavedAt ? 'rascunho salvo' : 'ainda sem salvar'}
               </span>
             </p>

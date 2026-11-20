@@ -47,7 +47,7 @@ const RedacaoSetupModal: React.FC<Props> = ({ completedIds, onPick, onResetCompl
   return (
     <div className="space-y-4">
       <div className="relative">
-        <Icon name="magnifying-glass" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+        <Icon name="magnifying-glass" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs dark:text-gray-400" />
         <input
           type="text"
           value={search}
@@ -56,7 +56,7 @@ const RedacaoSetupModal: React.FC<Props> = ({ completedIds, onPick, onResetCompl
           aria-label="Buscar tema"
           enterKeyHint="search"
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-          className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:border-violet-300 dark:focus:border-violet-700"
+          className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:border-violet-300 dark:focus:border-violet-700"
         />
       </div>
 
@@ -64,7 +64,7 @@ const RedacaoSetupModal: React.FC<Props> = ({ completedIds, onPick, onResetCompl
         <button
           onClick={() => setAxis('all')}
           aria-pressed={axis === 'all'}
-          className={`${CHIP} ${axis === 'all' ? 'bg-violet-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}
+          className={`${CHIP} ${axis === 'all' ? 'bg-violet-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}
         >
           Todos · {available}
         </button>
@@ -73,7 +73,7 @@ const RedacaoSetupModal: React.FC<Props> = ({ completedIds, onPick, onResetCompl
             key={key}
             onClick={() => setAxis(key)}
             aria-pressed={axis === key}
-            className={`${CHIP} ${axis === key ? 'text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}
+            className={`${CHIP} ${axis === key ? 'text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}
             style={axis === key ? { backgroundColor: AXIS_COLORS[key] } : undefined}
           >
             {AXIS_LABELS[key]} · {count}
@@ -84,7 +84,7 @@ const RedacaoSetupModal: React.FC<Props> = ({ completedIds, onPick, onResetCompl
             onClick={() => setAxis('feitas')}
             aria-pressed={feitas}
             className={`${CHIP} inline-flex items-center gap-1.5 ${
-              feitas ? 'bg-emerald-500 text-white' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+              feitas ? 'bg-emerald-700 text-white' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
             }`}
           >
             <Icon name="circle-check" className="text-[9px]" />
@@ -95,7 +95,7 @@ const RedacaoSetupModal: React.FC<Props> = ({ completedIds, onPick, onResetCompl
 
       {feitas && doneCount > 0 && (
         <div className="flex items-start gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl">
-          <Icon name="circle-info" className="text-emerald-600 text-sm mt-0.5 shrink-0" />
+          <Icon name="circle-info" className="text-emerald-700 text-sm mt-0.5 shrink-0 dark:text-emerald-400" />
           <p className="text-xs text-emerald-800 dark:text-emerald-300 flex-1 leading-snug">
             Estas redações já foram feitas. Toque em uma para refazer ou{' '}
             <button onClick={onResetCompleted} className="font-black underline decoration-dotted underline-offset-2">
@@ -108,7 +108,7 @@ const RedacaoSetupModal: React.FC<Props> = ({ completedIds, onPick, onResetCompl
 
       <div className="space-y-2" data-testid="redacao-themes">
         {list.length === 0 && (
-          <p className="text-center py-12 text-gray-400 dark:text-gray-500 text-sm">
+          <p className="text-center py-12 text-gray-500 dark:text-gray-400 text-sm">
             {feitas ? 'Nenhuma redação marcada como feita.' : 'Nenhum tema encontrado.'}
           </p>
         )}
@@ -127,21 +127,21 @@ const RedacaoSetupModal: React.FC<Props> = ({ completedIds, onPick, onResetCompl
                   >
                     {AXIS_LABELS[theme.axis]}
                   </span>
-                  {theme.year && <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">ENEM {theme.year}</span>}
+                  {theme.year && <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">ENEM {theme.year}</span>}
                   {!theme.verified && (
-                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
+                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">
                       A conferir
                     </span>
                   )}
                   {feitas && (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
                       <Icon name="circle-check" className="text-[9px]" /> Feita
                     </span>
                   )}
                 </div>
                 <p className="text-sm font-bold leading-snug text-gray-800 dark:text-gray-200">{theme.title}</p>
               </div>
-              <Icon name="pen" className="text-violet-400 text-xs mt-1 shrink-0" />
+              <Icon name="pen" className="text-violet-600 text-xs mt-1 shrink-0 dark:text-violet-400" />
             </div>
           </button>
         ))}

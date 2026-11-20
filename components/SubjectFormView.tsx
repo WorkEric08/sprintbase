@@ -19,7 +19,7 @@ const PALETTE = [
   '#f59e0b', '#f97316', '#ef4444', '#ec4899', '#8b5cf6',
 ];
 
-const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const LABEL = 'text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 
 const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
   useBackButton(onClose);
@@ -43,12 +43,12 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-950 flex flex-col animate-slide-up">
+    <div role="dialog" aria-modal="true" aria-label="Matéria" className="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-950 flex flex-col animate-slide-up">
       <div className="flex items-center gap-3 px-4 pb-3 safe-top border-b border-gray-100 dark:border-gray-800 shrink-0">
         <button
           onClick={onClose}
           aria-label="Voltar"
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:scale-90 transition-transform"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:scale-90 transition-transform"
         >
           <Icon name="arrow-left" className="text-sm" />
         </button>
@@ -71,7 +71,7 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
               // A tecla de ação do teclado vira "Concluído" e recolhe o teclado (antes ela não fazia nada).
               enterKeyHint="done"
               onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-              className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700"
+              className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:border-indigo-300 dark:focus:border-indigo-700"
             />
           </div>
 
@@ -94,7 +94,7 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
                 <div key={i} className="w-3.5 h-3.5 rounded-sm" style={{ backgroundColor: color, opacity: 0.85 }} />
               ))}
               {blockCount > 40 && (
-                <span className="text-[10px] font-black text-gray-400 dark:text-gray-600 self-center ml-1">
+                <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 self-center ml-1">
                   +{blockCount - 40}
                 </span>
               )}
@@ -118,7 +118,7 @@ const SubjectFormView: React.FC<Props> = ({ subject, onSave, onClose }) => {
               <button
                 onClick={() => setCustomColor(v => !v)}
                 aria-label="Escolher outra cor"
-                className={`w-9 h-9 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 ${
+                className={`w-9 h-9 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-500 ${
                   customColor ? 'bg-gray-100 dark:bg-gray-800' : ''
                 }`}
               >

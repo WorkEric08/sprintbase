@@ -296,9 +296,29 @@ Tudo é armazenado no próprio aparelho (IndexedDB) e não é enviado para nenhu
 
 Para não perder nada, use **Ajustes → Seus dados → Exportar**: o app gera um arquivo de backup com tudo, e **Importar** restaura esse arquivo em outro aparelho ou depois de reinstalar. Importar **substitui** os dados atuais, e o app pede confirmação antes.
 
+## Polimento e release por dentro
+
+Decisões da v0.7.0 (2026-11-20), com o motivo.
+
+- **Desempenho com muitos dados.** Cada mudança grava só o registro alterado (`put` de uma linha); o `bulkPut` de tabela inteira existe apenas na restauração de backup. Medido no Chrome com 20.000 registros de bloco, 2.000 simulados, 2.000 redações e 4.000 revisões: tela inicial pronta em ~220 ms (com 300 registros, ~110 ms) e cada troca de aba abaixo de 140 ms, com 26 MB de memória.
+- **Telas baixas, largas e tablets.** O anel do cronômetro e o relógio acompanham a **altura** da tela (`.timer-ring-box` e `.timer-clock`, em `index.css`); com o celular **deitado** (altura até 520 px) o anel fica de um lado e os botões do outro, então "Pausar", "Pular" e "Encerrar sprint" nunca saem da tela. Conferido em 320×480, 360×640, 390×844, 844×390, 768×1024, 1024×768 e 1280×800, nos dois temas.
+- **Contraste.** Todo texto passa de **4,5:1** (WCAG AA) nos dois temas nas telas principais, medido por script em 360×640. O cinza `gray-500` foi redefinido (`#5f6877`) e as cores das matérias e dos resultados, quando viram **texto**, passam por `legible()` (`utils/color.ts`), que mistura a cor com preto (tema claro) ou um pouco de branco (escuro). Barras, pontos e fundos continuam com a cor exata da matéria.
+- **Teclado e leitores de tela.** **Esc** fecha a camada do topo na web (o mesmo que o botão voltar do aparelho; não age durante a composição do IME). Telas cheias, folhas e diálogos têm `role="dialog"` (`alertdialog` nas confirmações), `aria-modal` e nome. Com **movimento reduzido** ligado no sistema, as animações e transições são desativadas.
+- **Permissões do Android.** O manifesto do app declara só `INTERNET` (a base do WebView). As outras quatro vêm do plugin de notificações e foram mantidas de propósito: `POST_NOTIFICATIONS` (os avisos), `SCHEDULE_EXACT_ALARM` (aviso na hora certa com a tela bloqueada), `WAKE_LOCK` (o alarme acordar o aparelho) e `RECEIVE_BOOT_COMPLETED` (reagendar avisos se o aparelho reiniciar no meio de uma prova). Nenhuma pede câmera, localização, contatos, arquivos ou rede além do WebView; a tela ligada usa um *flag* da janela, que dispensa permissão. `utils/release.test.ts` trava a lista do manifesto.
+- **Versão.** Única fonte: `package.json`. `versionName` é a própria versão e `versionCode` = maior×10000 + menor×100 + patch (0.7.0 → 700), então sempre cresce. **Ajustes** mostra `v0.7.0` no rodapé (e não o hash do commit).
+- **Atualizar por cima mantém os dados.** O Android só atualiza se o pacote, a chave de assinatura e o `versionCode` crescente baterem. Conferido com o `apksigner` e o `aapt2`: o `Sprint.apk` publicado da v0.3.0 (versionCode 300) e o desta versão têm o mesmo pacote (`com.workeric08.sprint`) e o **mesmo certificado SHA-256** (`ee65984d…5040`). O banco continua em `SprintDB` v7, igual ao da v0.3.0, e `utils/release.test.ts` falha se alguém mudar o schema sem criar uma nova `version(n)`, o `appId` ou a regra do `versionCode`.
+
+Roteiro de release (resumo; os comandos estão em "Gerar o APK"):
+
+1. Subir a versão em `package.json` (e `package-lock.json`) e escrever `docs/releases/vX.Y.Z.md`.
+2. `npm run lint`, `npm test`, `npm run e2e`, `npm run e2e -- --preview`, `npm run e2e:simulado-nativo` e `npm run perf`.
+3. `npm run android:build` (debug) e `npm run android:release` (assinado, com o checksum em `release/Sprint.apk.sha256`).
+4. Conferir `apksigner verify --print-certs` e `aapt2 dump badging` (certificado igual ao da versão anterior, `versionCode` maior).
+5. Passar os roteiros de aparelho de "O que não foi verificado" antes de publicar.
+
 ## Próximos passos
 
-O Sprint Base é uma base enxuta, pensada para crescer aos poucos. O que falta é o polimento final: desempenho em tabelas grandes, telas largas e tablets, acessibilidade, permissões mínimas do Android e a versão do app em Ajustes.
+O app tem agora todos os módulos planejados. O que falta não é código: é passar os roteiros da seção abaixo num **aparelho Android real**, e conferir os temas de redação do ENEM marcados "A conferir" na fonte oficial do INEP.
 
 ## O que não foi verificado
 

@@ -93,7 +93,7 @@ const BlockTimerView: React.FC<Props> = ({
       <div className="w-full flex justify-between items-center">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-3 h-3 rounded-full animate-pulse shrink-0" style={{ backgroundColor: color }} />
-          <h2 className="text-sm font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest truncate">{subject.title}</h2>
+          <h2 className="text-sm font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest truncate">{subject.title}</h2>
           {blockType !== 'study' && (
             <span
               className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0"
@@ -103,24 +103,25 @@ const BlockTimerView: React.FC<Props> = ({
             </span>
           )}
         </div>
-        <span className="text-xs font-black text-gray-300 dark:text-gray-700 uppercase tracking-widest shrink-0 ml-3">
+        <span className="text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest shrink-0 ml-3">
           {cycleIndex + 1} / {cycleTotal}
         </span>
       </div>
 
+      <div className="timer-body">
       <div className="flex flex-col items-center gap-6">
         <TimerRing fraction={fraction} color={color}>
           {finished ? (
             <div className="flex flex-col items-center animate-bounce">
-              <Icon name="circle-check" className="text-6xl text-green-500 mb-2" />
+              <Icon name="circle-check" className="text-6xl text-green-700 mb-2 dark:text-green-400" />
               <span className="text-lg font-black text-gray-800 dark:text-white uppercase tracking-tighter">Bloco concluído!</span>
             </div>
           ) : (
             <>
-              <span className="text-6xl font-black text-gray-800 dark:text-white tabular-nums tracking-tighter">
+              <span className="timer-clock font-black text-gray-800 dark:text-white tabular-nums tracking-tighter">
                 {formatClock(secondsLeft)}
               </span>
-              <span className="text-xs font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mt-2">restantes</span>
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-2">restantes</span>
             </>
           )}
         </TimerRing>
@@ -135,14 +136,14 @@ const BlockTimerView: React.FC<Props> = ({
               />
             ))}
             {subject.blockCount > 12 && (
-              <span className="text-[10px] font-black text-gray-400 dark:text-gray-600 self-center ml-1">+{subject.blockCount - 12}</span>
+              <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 self-center ml-1">+{subject.blockCount - 12}</span>
             )}
           </div>
-          <span className="text-xs font-bold text-gray-400 dark:text-gray-600">{done}/{subject.blockCount}</span>
+          <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{done}/{subject.blockCount}</span>
         </div>
       </div>
 
-      <div className="w-full max-w-xs space-y-3 pb-12">
+      <div className="timer-actions w-full max-w-xs space-y-3 pb-12">
         {!finished && (
           <>
             <button
@@ -155,18 +156,19 @@ const BlockTimerView: React.FC<Props> = ({
             </button>
             <button
               onClick={handleSkipBlock}
-              className="w-full py-4 text-gray-400 dark:text-gray-600 font-bold text-xs uppercase tracking-widest hover:text-indigo-500 transition-colors"
+              className="w-full py-4 text-gray-500 dark:text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-indigo-500 transition-colors"
             >
               {cycleIndex + 1 < cycleTotal ? 'Pular → próximo bloco' : 'Pular → finalizar sprint'}
             </button>
             <button
               onClick={openExit}
-              className="w-full py-3 text-gray-300 dark:text-gray-700 font-bold text-xs uppercase tracking-widest hover:text-red-400 transition-colors"
+              className="w-full py-3 text-gray-500 dark:text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-red-400 transition-colors"
             >
               Encerrar sprint
             </button>
           </>
         )}
+      </div>
       </div>
 
       <div
@@ -183,7 +185,7 @@ const BlockTimerView: React.FC<Props> = ({
           onConfirm={onExit}
           onCancel={closeExit}
         >
-          O tempo deste bloco <span className="font-bold text-red-500">não será contabilizado</span>.
+          O tempo deste bloco <span className="font-bold text-red-700 dark:text-red-400">não será contabilizado</span>.
         </ConfirmDialog>
       )}
 

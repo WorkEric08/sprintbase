@@ -26,7 +26,7 @@ const THEME_BY_ID = new Map(REDACAO_THEMES.map(t => [t.id, t]));
 const themeOf = (s: RedacaoSession): RedacaoTheme =>
   THEME_BY_ID.get(s.themeId) ?? { id: s.themeId, title: s.themeTitle, axis: 'treino', source: 'treino', verified: true };
 
-const LABEL = 'text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest';
+const LABEL = 'text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest';
 
 /**
  * Aba Redação: escolher o tema, escrever (no app ou no papel), continuar um rascunho e ver o histórico.
@@ -84,7 +84,7 @@ const RedacaoView: React.FC = () => {
           className="shrink-0 flex items-center gap-2 px-4 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-transform"
         >
           <Icon name="clock-rotate-left" />
-          Histórico{redacoes.length > 0 && <span className="text-violet-500">{redacoes.length}</span>}
+          Histórico{redacoes.length > 0 && <span className="text-violet-600 dark:text-violet-400">{redacoes.length}</span>}
         </button>
       </div>
 

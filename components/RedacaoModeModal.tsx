@@ -28,7 +28,7 @@ const RedacaoModeModal: React.FC<Props> = ({ theme, onChooseDigital, onChoosePap
         <div className="w-10 h-1 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mt-3 mb-1 md:hidden" />
 
         <div className="px-6 pt-4 pb-4 space-y-2">
-          <button onClick={onBack} className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest py-1">
+          <button onClick={onBack} className="flex items-center gap-1.5 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest py-1">
             <Icon name="arrow-left" className="text-[9px]" />
             Trocar tema
           </button>
@@ -37,7 +37,7 @@ const RedacaoModeModal: React.FC<Props> = ({ theme, onChooseDigital, onChoosePap
         </div>
 
         <div className="px-6 pb-2">
-          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Como vai fazer a redação?</p>
+          <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Como vai fazer a redação?</p>
         </div>
 
         <div className="px-6 pb-5 pt-2 flex flex-col gap-3">
@@ -74,7 +74,7 @@ const RedacaoModeModal: React.FC<Props> = ({ theme, onChooseDigital, onChoosePap
 
         {theme.context && (
           <div className="px-6 pb-8 space-y-1.5">
-            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sobre o tema</p>
+            <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Sobre o tema</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line">{theme.context}</p>
           </div>
         )}

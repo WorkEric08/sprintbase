@@ -19,12 +19,12 @@ interface Props {
 const TONES: Record<Tone, { iconWrap: string; iconText: string; button: string }> = {
   danger: {
     iconWrap: 'bg-red-50 dark:bg-red-900/20',
-    iconText: 'text-red-500',
+    iconText: 'text-red-700 dark:text-red-400',
     button: 'bg-red-500 hover:bg-red-600',
   },
   warning: {
     iconWrap: 'bg-amber-50 dark:bg-amber-900/20',
-    iconText: 'text-amber-500',
+    iconText: 'text-amber-700 dark:text-amber-400',
     button: 'bg-amber-500 hover:bg-amber-600',
   },
 };
@@ -37,7 +37,7 @@ const ConfirmDialog: React.FC<Props> = ({
   const t = TONES[tone];
 
   return createPortal(
-    <div className="fixed inset-0 z-[70] bg-white/80 dark:bg-gray-950/80 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
+    <div role="alertdialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[70] bg-white/80 dark:bg-gray-950/80 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
       <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl p-8 shadow-2xl border border-gray-100 dark:border-gray-800 text-center space-y-6 animate-pop-in">
         <div className={`w-16 h-16 ${t.iconWrap} rounded-full flex items-center justify-center mx-auto`}>
           <Icon name={icon} className={`text-2xl ${t.iconText}`} />

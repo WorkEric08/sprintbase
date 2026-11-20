@@ -1,6 +1,7 @@
 import React from 'react';
 import { BLOCK_TYPE_COLORS, BlockType, Subject } from '../types';
 import Icon from './Icon';
+import { legible } from '../utils/color';
 
 interface Props {
   subject: Subject;
@@ -15,7 +16,7 @@ function blockColor(type: BlockType, subjectColor: string): string {
 }
 
 const ICON_BTN =
-  'w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 transition-colors';
+  'w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 transition-colors dark:text-gray-400';
 
 const SubjectCard: React.FC<Props> = ({ subject, onReset, onEdit, onDelete }) => {
   const completed = subject.completedBlocks.length;
@@ -35,7 +36,7 @@ const SubjectCard: React.FC<Props> = ({ subject, onReset, onEdit, onDelete }) =>
             </span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0 ml-2">
-            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase">{subject.duration}min</span>
+            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{subject.duration}min</span>
             <button onClick={onReset} title="Resetar blocos" aria-label="Resetar blocos" className={`${ICON_BTN} hover:text-amber-500`}>
               <Icon name="rotate-left" className="text-[10px]" />
             </button>
@@ -50,15 +51,15 @@ const SubjectCard: React.FC<Props> = ({ subject, onReset, onEdit, onDelete }) =>
 
         <div className="space-y-2">
           <div className="flex items-end justify-between">
-            <div className="flex items-baseline gap-0.5" style={{ color: subject.color }}>
+            <div className="flex items-baseline gap-0.5" style={{ color: legible(subject.color) }}>
               <span className="text-3xl font-black tracking-tighter leading-none">{pct}</span>
               <span className="text-base font-black leading-none">%</span>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">
+              <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
                 {completed} / {total}
               </p>
-              <p className="text-[9px] font-bold text-gray-300 dark:text-gray-700 uppercase tracking-wider mt-0.5">blocos</p>
+              <p className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-0.5">blocos</p>
             </div>
           </div>
           <div className="h-2 w-full bg-gray-100 dark:bg-gray-800/80 rounded-full overflow-hidden">
